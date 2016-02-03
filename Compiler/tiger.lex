@@ -9,13 +9,13 @@ fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
 
 
 %% 
-%s COMMENT
-alpha = [a-zA-Z];
-digit = [0-9];
-ws = [\ \t];
-id = ({alpha})({alpha}|{digit}|_)*;
-stringFlag = ["];
-stringContent = [^"];
+%s COMMENT;
+alpha=[a-zA-Z];
+digit=[0-9];
+ws=[\ \t];
+id=({alpha})({alpha}|{digit}|_)*;
+stringFlag=["];
+stringContent=[^"];
 
 %%
 <INITIAL>"type" => (Tokens.TYPE(yypos, yypos + size(yytext)));
@@ -60,8 +60,8 @@ stringContent = [^"];
 <INITIAL>":" => (Tokens.COLON(yypos, yypos + size(yytext)));
 <INITIAL>"," => (Tokens.COMMA(yypos, yypos + size(yytext)));
 
-<INITIAL>{stringFlag}{stringContent}{stringFlag} => (Tokens.STRING(yytext, yypos, yypos + size(yytext)));
-<INITIAL>{digit}+ =>(Tokens.INT(Int.fromString(yytext), yypost, yypos + size(yytext)));
+<INITIAL>{stringFlag}{stringContent}*{stringFlag} => (Tokens.STRING(yytext, yypos, yypos + size(yytext)));
+<INITIAL>{digit}+ =>(Tokens.INT(Option.getOpt(Int.fromString(yytext),0), yypos, yypos + size(yytext)));
 <INITIAL>{id} => (Tokens.ID(yytext, yypos, yypos + size(yytext)));
 <INITIAL>{ws}+ => (continue());
 <INITIAL>\n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
