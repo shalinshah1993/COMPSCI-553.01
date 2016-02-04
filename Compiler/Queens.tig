@@ -1,4 +1,4 @@
-/* A program to solve the 8-queens problem */
+/* A program to solve the 8-queens problem /*Test Nested Comment*/ another test */
 let
 	var N := 8
 	
