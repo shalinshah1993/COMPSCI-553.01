@@ -1,6 +1,7 @@
 type pos = int
 type lexresult = Tokens.token
 
+val nestedComment = ref 0
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 fun err(p1,p2) = ErrorMsg.error p1
@@ -66,8 +67,9 @@ stringContent=[^"];
 <INITIAL>{ws}+ => (continue());
 <INITIAL>\n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 
-<INITIAL>"/*" => (YYBEGIN COMMENT; continue());
-<COMMENT>"*/" => (YYBEGIN INITIAL; continue());
+<INITIAL>"/*" => (YYBEGIN COMMENT; nestedComment := 0; continue());
+<COMMENT>"/*" => (nestedComment := !nestedComment + 1; continue());
+<COMMENT>"*/" => (nestedComment := !nestedComment - 1; if (!nestedComment < 0) then (YYBEGIN INITIAL; continue()) else continue());  
 <COMMENT>. => (continue());
 
 .       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
