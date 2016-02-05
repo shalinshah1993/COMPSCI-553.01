@@ -2,27 +2,31 @@ type pos = int
 type lexresult = Tokens.token
 
 val nestedComment = ref 0
+val nestedString = ref 0
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 fun err(p1,p2) = ErrorMsg.error p1
 
 fun eof() = 
-	if (!nestedComment) < 0 then
+	if (!nestedComment) = 0 then
 		let 
 			val pos = hd(!linePos); 
 		in 
-			Tokens.EOF(pos,pos) 
+			if (!nestedString) = 0 then
+				Tokens.EOF(pos,pos) 
+			else
+				(ErrorMsg.error pos ("String not closed at end of file"); Tokens.NSTSTRERR(pos,pos))
 		end	
 	else
-		let val pos = hd(!linePos);
+		let 
+			val pos = hd(!linePos);
 			val error = ErrorMsg.error pos ("Comment not closed at end of file");
-			in Tokens.NSTCOMERR(pos,pos)
+		in 
+			Tokens.NSTCOMERR(pos,pos)
 		end
-		
-
 
 %% 
-%s COMMENT;
+%s COMMENT STRING;
 alpha=[a-zA-Z];
 digit=[0-9];
 ws=[\ \t];
@@ -79,10 +83,14 @@ stringContent=[^"];
 <INITIAL>{ws}+ => (continue());
 <INITIAL>\n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 
-<INITIAL>"/*" => (YYBEGIN COMMENT; nestedComment := 0; continue());
-<COMMENT>"/*" => (nestedComment := !nestedComment + 1; continue());
-<COMMENT>"*/" => (nestedComment := !nestedComment - 1; if (!nestedComment < 0) then (YYBEGIN INITIAL; continue()) else continue());  
+<INITIAL>"\""	=> (YYBEGIN STRING; nestedString := 1; continue());
+<STRING>"\""	=> (nestedString := !nestedString - 1; if (!nestedString = 0) then (YYBEGIN INITIAL; continue()) else continue());
+<STRING>"\n"	=> (continue());
 
+<INITIAL>"/*" => (YYBEGIN COMMENT; nestedComment := 1; continue());
+<COMMENT>"/*" => (nestedComment := !nestedComment + 1; continue());
+<COMMENT>"*/" => (nestedComment := !nestedComment - 1; if (!nestedComment = 0) then (YYBEGIN INITIAL; continue()) else continue());  
 <COMMENT>. => (continue());
 <COMMENT>\n => (continue());
+
 .       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
