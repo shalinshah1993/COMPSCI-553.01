@@ -1,4 +1,4 @@
-/* A program to solve the 8-queens problem /*Test Nested Comment*/ another test */
+/* A program to solve the 8-queens problem another test /*Nest */ This shouldn't print */
 let
 	var N := 8
 	
@@ -27,4 +27,6 @@ let
 				row[r]:=0; diag1[r+c]:=0; diag2[r+7-c]:=0)
 				
 in try(0)
+/* open comment */
 end
+

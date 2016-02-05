@@ -6,7 +6,19 @@ val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 fun err(p1,p2) = ErrorMsg.error p1
 
-fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
+fun eof() = 
+	if (!nestedComment) < 0 then
+		let 
+			val pos = hd(!linePos); 
+		in 
+			Tokens.EOF(pos,pos) 
+		end	
+	else
+		let val pos = hd(!linePos);
+			val error = ErrorMsg.error pos ("Comment not closed at end of file");
+			in Tokens.NSTCOMERR(pos,pos)
+		end
+		
 
 
 %% 
@@ -70,6 +82,7 @@ stringContent=[^"];
 <INITIAL>"/*" => (YYBEGIN COMMENT; nestedComment := 0; continue());
 <COMMENT>"/*" => (nestedComment := !nestedComment + 1; continue());
 <COMMENT>"*/" => (nestedComment := !nestedComment - 1; if (!nestedComment < 0) then (YYBEGIN INITIAL; continue()) else continue());  
-<COMMENT>. => (continue());
 
+<COMMENT>. => (continue());
+<COMMENT>\n => (continue());
 .       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());

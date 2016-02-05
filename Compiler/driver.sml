@@ -7,7 +7,10 @@ struct
 	  fun do_it() =
 	      let val t = lexer()
 	       in print t; print "\n";
-		   if substring(t,0,3)="EOF" then () else do_it()
+		   case substring(t,0,3) of
+				"EOF" => ()
+				| "ERR" => ()
+				| _ => do_it()
 	      end
        in do_it();
 	  TextIO.closeIn file

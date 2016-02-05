@@ -46,4 +46,5 @@ val STRING: (string) *  linenum * linenum -> token
 val INT: (int) *  linenum * linenum -> token
 val ID: (string) *  linenum * linenum -> token
 val EOF:  linenum * linenum -> token
+val NSTCOMERR: linenum * linenum -> token
 end
