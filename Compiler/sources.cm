@@ -5,5 +5,8 @@ errormsg.sml
 tokens.sig
 tokens.sml
 tiger.lex
+parsetest.sml
+tiger.grm
 $/basis.cm
 $/smlnj-lib.cm
+$/ml-yacc-lib.cm
