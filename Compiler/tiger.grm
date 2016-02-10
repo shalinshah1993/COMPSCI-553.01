@@ -12,6 +12,7 @@
   | FUNCTION | VAR | TYPE 
 
 %nonterm  exp | program
+(* Here is where all of the non-terminal characters in the grammar exist *)
 
 %pos int
 %verbose
