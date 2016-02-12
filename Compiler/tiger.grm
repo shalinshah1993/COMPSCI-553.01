@@ -11,8 +11,34 @@
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | program
-(* Here is where all of the non-terminal characters in the grammar exist *)
+%nonterm  
+	exp 
+	| program
+	| dec
+	| tyDec
+	| ty
+	| arrTy
+	| recTy
+	| fieldDec
+	| funDec
+	| varDec
+	| lValue
+	| subscript
+	| fieldExp
+	| exp
+	| segExp
+	| negation
+	| callExp
+	| infixExp
+	| arrCreate
+	| recCreate
+	| fieldCreate
+	| assignment
+	| ifThenElse
+	| ifThen
+	| whileExp
+	| forExp
+	| letExp
 
 %pos int
 %verbose
