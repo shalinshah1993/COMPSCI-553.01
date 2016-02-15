@@ -66,5 +66,51 @@
 
 program	: exp				()
 
+dec: tyDec					()
+	| varDec				()
+	| funDec				()
 	
-exp: 			()
+tyDec: 						()
+	| ty
+	
+ty: ID						()
+	| arrTy					()
+	| recTy					()
+	
+arrTy: ARRAY				()
+
+recTy: fieldDec				()
+
+fieldDec: ID				()
+
+funDec: exp					()
+	(* There's a second type of funDec of type tyId *)
+	
+varDec: ID					()
+	(* There's a second type of varDec of type tyId *)
+	
+lValue: ID					()
+		| subscript			()
+		| fieldExp			()
+		
+subscript: lValue			()
+
+fieldExp: lValue			()
+
+exp: 						()
+	| lValue				()
+	| NIL					()
+	| INT					()
+	| STRING
+	| seqExp				()
+	| negation				()
+	| callExp				()
+	| infixExp				()
+	| arrCreate				()
+	| recCreate				()
+	| assignment			()
+	| ifThenElse			()
+	| ifThen				()
+	| whileExp				()
+	| forExp				()
+	| letExp				()
