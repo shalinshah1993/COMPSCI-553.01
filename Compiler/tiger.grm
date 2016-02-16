@@ -1,45 +1,27 @@
 %%
 
 
-%term	EOF 
-		| ID of string
-		| INT of int | STRING of string 
-		| COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK 
-		| LBRACE | RBRACE | DOT 
-		| PLUS | MINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE | UMINUS
-		| AND | OR | ASSIGN
-		| ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
-		| BREAK | NIL
-		| FUNCTION | VAR | TYPE 
+%term EOF 
+	| ID of string
+	| INT of int | STRING of string 
+	| COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK 
+	| LBRACE | RBRACE | DOT 
+	| PLUS | MINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE | UMINUS
+	| AND | OR | ASSIGN
+	| ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
+	| BREAK | NIL
+	| FUNCTION | VAR | TYPE 
 
-%nonterm	exp 
-		| program
-		| dec
-		| tyDec
-		| ty
-		| arrTy
-		| recTy
-		| fieldDec
-		| funDec
-		| varDec
-		| lValue
-		| subscript
-		| fieldExp
+%nonterm  program
 		| exp
-		| segExp
-		| negation
-		| callExp
-		| infixExp
-		| arrCreate
-		| recCreate
-		| fieldCreate
-		| assignment
-		| ifThenElse
-		| ifThen
-		| whileExp
-		| forExp
-		| letExp
-
+		| lValue
+		| arithmeticExp
+		| compExp
+		| boolExp
+		| noValExp
+		| expSeq
+		| funcCall
+		| paraList
 
 %name ItIsOurOwnParserBitch
 %pos int
@@ -59,77 +41,66 @@
 %value STRING ("")
 
 (* Precedence in the reverse order *)
-%nonassoc EQ NEQ
+%nonassoc ASSIGN
+%left AND OR
+%nonassoc EQ NEQ LT LE GT GE
 %left PLUS MINUS
-%left TIMES
-%right EXP
+%left TIMES DIVIDE
 %left UMINUS
-
 
 %%
 
+program	: 
+			exp					()
 
-program	: exp				()
+exp : 	
+		NIL						()
+	|	INT 					()
+	|	STRING 					()
+	|	lValue					()
+	|	arithmeticExp			()
+	|	compExp					()
+	|	boolExp					()
+	|	noValExp				()
+	|	LPAREN expSeq RPAREN 	()
+	|	funcCall				()
 
-exp : 	INT 				()
-	|	VAR 				()
-	|	exp TIMES exp 			(EXP1 * EXP2)
-	|	exp DIVIDE exp 			(EXP1 div EXP2)
-	|	exp PLUS exp 			(EXP1 + EXP2)
-	|	exp MINUS exp 			(EXP1 - EXP2)
-	|	exp EQ exp 				()
-	|	exp NEQ exp 			()
-	| 	exp GT exp 				()
-	|	exp GE exp 				()
-	|	exp LT exp 				()
-	| 	exp LE exp 				()
-	|	(exp) 				()
+lValue :
+			ID							()
+		|	lValue DOT ID				()
+		|	lValue LBRACE exp RBRACK	()
 
-(*dec: tyDec					()
-	| varDec				()
-	| funDec				()
-	
-tyDec: 						()
-	| ty
-	
-ty: ID						()
-	| arrTy					()
-	| recTy					()
-	
-arrTy: ARRAY				()
+arithmeticExp :	
+				exp TIMES exp 			()
+			|	exp DIVIDE exp 			()
+			|	exp PLUS exp 			()
+			|	exp MINUS exp 			()
+			|	MINUS exp %prec UMINUS 	()
 
-recTy: fieldDec				()
+compExp :
+			exp EQ exp 				()
+		|	exp NEQ exp 			()
+		| 	exp GT exp 				()
+		|	exp GE exp 				()
+		|	exp LT exp 				()
+		| 	exp LE exp 				()
 
-fieldDec: ID				()
+boolExp :
+			exp AND exp 			()
+		|	exp OR exp 				()
 
-funDec: exp					()*)
-	(* There's a second type of funDec of type tyId *)
-	
-(*varDec: ID					()*)
-	(* There's a second type of varDec of type tyId *)
-	
-(*lValue: ID					()
-		| subscript			()
-		| fieldExp			()
-		
-subscript: lValue			()
+noValExp :
+			LPAREN RPAREN			()
 
-fieldExp: lValue			()
+expSeq :
+			exp 					()
+		|	expSeq SEMICOLON exp 	()
 
-exp: 						()
-	| lValue				()
-	| NIL					()
-	| INT					()
-	| STRING
-	| seqExp				()
-	| negation				()
-	| callExp				()
-	| infixExp				()
-	| arrCreate				()
-	| recCreate				()
-	| assignment			()
-	| ifThenElse			()
-	| ifThen				()
-	| whileExp				()
-	| forExp				()
-	| letExp				()*)
+funcCall :
+			ID LPAREN paraList RPAREN	()
+
+paraList :
+										()
+		|	exp 						()
+		|	paraList COMMA exp 			()
+
