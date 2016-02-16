@@ -13,6 +13,7 @@
 	| FUNCTION | VAR | TYPE 
 
 %nonterm  program
+		| statement
 		| exp
 		| lValue
 		| arithmeticExp
@@ -22,6 +23,18 @@
 		| expSeq
 		| funcCall
 		| paraList
+		| decs
+		| dec
+		| typeDec
+		| ty
+		| tyfield
+		| tyfields
+		| varDec
+		| funcDec
+		| createArray
+		| createRecord
+		| recordList
+		| recordField
 
 %name ItIsOurOwnParserBitch
 %pos int
@@ -51,25 +64,42 @@
 %%
 
 program	: 
-			exp					()
+			statement	()		
 
+statement :
+			exp 		()
+
+(* CFG for declaring an expression *)
 exp : 	
-		NIL						()
-	|	INT 					()
-	|	STRING 					()
-	|	lValue					()
-	|	arithmeticExp			()
-	|	compExp					()
-	|	boolExp					()
-	|	noValExp				()
-	|	LPAREN expSeq RPAREN 	()
-	|	funcCall				()
+		NIL								()
+	|	INT 							()
+	|	STRING 							()
+	|	BREAK							()
+	|	lValue							()
+	|	arithmeticExp					()
+	|	compExp							()
+	|	boolExp							()
+	|	noValExp						()
+	|	LPAREN expSeq RPAREN 			()
+	|	funcCall						()
+	|	LET decs IN expSeq END 			()
+	(*|	createArray						()
+	|	createRecord					()
+	|	lValue ASSIGN exp 				()
+	|	IF exp THEN exp ELSE exp        ()
+  	| 	IF exp THEN exp                 ()
+  	| 	WHILE exp DO exp                ()
+  	|	FOR ID ASSIGN exp TO exp DO exp ()
+  	|	LPAREN expSeq RPAREN 			()*)
+
+
 
 lValue :
 			ID							()
 		|	lValue DOT ID				()
 		|	lValue LBRACE exp RBRACK	()
 
+(* CFG for different exp evaluation *)
 arithmeticExp :	
 				exp TIMES exp 			()
 			|	exp DIVIDE exp 			()
@@ -96,6 +126,7 @@ expSeq :
 			exp 					()
 		|	expSeq SEMICOLON exp 	()
 
+(* CFG to call a function and it's parameter list *)
 funcCall :
 			ID LPAREN paraList RPAREN	()
 
@@ -104,3 +135,55 @@ paraList :
 		|	exp 						()
 		|	paraList COMMA exp 			()
 
+(* CFG for declaring data type *)
+decs :
+								()
+	|	decs dec 				()
+
+dec :
+		typeDec					()
+	|	varDec 					()
+	|	funcDec 				()
+
+typeDec :  
+		TYPE ID EQ ty 			()
+
+ty : 
+		ID                        ()
+  	| 	LBRACE tyfields RBRACE    ()
+  	| 	ARRAY OF ID               ()
+
+(* CFG for list of types associated with an ID: Used as funPar and defining list data type *)
+tyfields :
+                           				()
+        |	tyfield 					()
+  		|	tyfields COMMA tyfield 		()
+
+tyfield : 
+			ID COLON ID          ()
+
+(* CFG for decalaring a variables *)
+varDec : 
+			VAR ID ASSIGN exp                  ()
+		|	VAR ID COLON ID ASSIGN exp         ()
+
+(* CFG for declaring a function *)
+funcDec : 
+			FUNCTION ID LPAREN tyfields RPAREN EQ exp       	()
+		|	FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  ()
+
+(* CFG for array creation *)
+(*createArray : 
+				ID LBRACK exp RBRACK OF exp        ()*)
+
+(* CFG for record creation *)
+(*createRecord : 
+				ID LBRACE recordList RBRACE      ()
+
+recordList :    
+                        							    ()
+  					|	recordField                     ()
+  					|	recordList COMMA recordField    ()
+
+recordField :
+				ID EQ exp         ()*)
