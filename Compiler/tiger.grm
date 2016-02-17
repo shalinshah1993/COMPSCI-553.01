@@ -91,7 +91,8 @@ exp :
 lValue :
 			ID							()
 		|	lValue DOT ID				()
-		|	lValue LBRACK exp RBRACK	()
+		(*|	lValue LBRACK exp RBRACK	() **This is the one conflict *)
+		
 
 (* CFG for different exp evaluation *)
 arithmeticExp :	
