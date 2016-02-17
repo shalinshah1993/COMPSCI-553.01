@@ -1,6 +1,6 @@
+structure A = Absyn
+
 %%
-
-
 %term EOF 
 	| ID of string
 	| INT of int | STRING of string 
@@ -12,16 +12,15 @@
 	| BREAK | NIL
 	| FUNCTION | VAR | TYPE 
 
-%nonterm  program
-		| statement
-		| exp
-		| lValue
-		| arithmeticExp
-		| compExp
-		| boolExp
-		| noValExp
-		| condExp
-		| expSeq
+%nonterm  program of A.exp
+		| exp of A.exp
+		| lValue of A.var
+		| arithmeticExp of A.exp
+		| compExp of A.exp
+		| boolExp of A.exp
+		| noValExp of A.exp
+		| condExp of A.exp
+		| expSeq of A.SeqExp
 		| funcCall
 		| paraList
 		| decs
@@ -66,113 +65,113 @@
 %%
 
 program	: 
-			exp			()		
+			exp							(exp)		
 
 (* CFG for declaring an expression *)
 exp : 	
-		NIL								()
-	|	INT 							()
+		NIL								(A.NilExp)
+	|	INT 							(A.IntExp INT)
 	|	STRING 							()
 	|	BREAK							()
 	|	lValue							()
-	|	arithmeticExp					()
-	|	compExp							()
-	|	boolExp							()
-	|	noValExp						()
-	|	condExp							()
-	|	funcCall						()
+	|	arithmeticExp					(arithmeticExp)
+	|	compExp							(compExp)
+	|	boolExp							(boolExp)
+	|	noValExp						(noValExp)
+	|	condExp							(condExp)
+	|	funcCall						(funcCall)
 	|	LET decs IN expSeq END 			()
-	|	createArray						()
-	|	createRecord					()
+	|	createArray						(createArray)
+	|	createRecord					(createRecord)
 	|	lValue ASSIGN exp 				()
 
 
 
 lValue :
-			ID							()
-		|	lValue DOT ID				()
-		(*|	lValue LBRACK exp RBRACK	() **This is the one conflict *)
+		ID								()
+	|	lValue DOT ID					()
+	(*|	lValue LBRACK exp RBRACK		() **This is the one conflict *)
 		
 
 (* CFG for different exp evaluation *)
 arithmeticExp :	
-				exp TIMES exp 			()
-			|	exp DIVIDE exp 			()
-			|	exp PLUS exp 			()
-			|	exp MINUS exp 			()
-			|	MINUS exp %prec UMINUS 	()
+		exp TIMES exp 					()
+	|	exp DIVIDE exp 					()
+	|	exp PLUS exp 					()
+	|	exp MINUS exp 					()
+	|	MINUS exp %prec UMINUS 			()
 
 compExp :
-			exp EQ exp 				()
-		|	exp NEQ exp 			()
-		| 	exp GT exp 				()
-		|	exp GE exp 				()
-		|	exp LT exp 				()
-		| 	exp LE exp 				()
+		exp EQ exp 						()
+	|	exp NEQ exp 					()
+	| 	exp GT exp 						()
+	|	exp GE exp 						()
+	|	exp LT exp 						()
+	| 	exp LE exp 						()
 
 boolExp :
-			exp AND exp 			()
-		|	exp OR exp 				()
+		exp AND exp 					()
+	|	exp OR exp 						()
 		
 condExp :
-			IF exp THEN exp ELSE exp        ()
-		| 	IF exp THEN exp                 ()
-		| 	WHILE exp DO exp                ()
-		|	FOR ID ASSIGN exp TO exp DO exp ()
+		IF exp THEN exp ELSE exp        ()
+	| 	IF exp THEN exp                 ()
+	| 	WHILE exp DO exp                ()
+	|	FOR ID ASSIGN exp TO exp DO exp ()
 		
 
 noValExp :
-			LPAREN RPAREN			()
+		LPAREN RPAREN					(A.NilExp)
 
 expSeq :
-			LPAREN expSeq RPAREN 			()
-		|	expSeq SEMICOLON exp 			()
+		LPAREN expSeq RPAREN 			()
+	|	expSeq SEMICOLON exp 			()
 
 (* CFG to call a function and it's parameter list *)
 funcCall :
-			ID LPAREN paraList RPAREN	()
+		ID LPAREN paraList RPAREN		()
 
 paraList :
-										()
-		|	exp 						()
-		|	paraList COMMA exp 			()
+										([])
+	|	exp 							(exp)
+	|	paraList COMMA exp 				()
 
 (* CFG for declaring data type *)
 decs :
-								()
-	|	decs dec 				()
+										(A.NilExp)
+	|	decs dec 						()
 
 dec :
-		typeDec					()
-	|	varDec 					()
-	|	funcDec 				()
+		typeDec							()
+	|	varDec 							()
+	|	funcDec 						()
 
 typeDec :  
-		TYPE ID EQ ty 			()
+		TYPE ID EQ ty 					()
 
 ty : 
-		ID                        ()
-  	| 	LBRACE tyfields RBRACE    ()
-  	| 	ARRAY OF ID               ()
+		ID                        		()
+  	| 	LBRACE tyfields RBRACE    		()
+  	| 	ARRAY OF ID               		()
 
 (* CFG for list of types associated with an ID: Used as funPar and defining list data type *)
 tyfields :
-                           				()
-        |	tyfield 					()
-  		|	tyfields COMMA tyfield 		()
+										()
+    |	tyfield 						()
+	|	tyfields COMMA tyfield 			()
 
 tyfield : 
-			ID COLON ID          ()
+		ID COLON ID          			()
 
 (* CFG for decalaring a variables *)
 varDec : 
-			VAR ID ASSIGN exp                  ()
-		|	VAR ID COLON ID ASSIGN exp         ()
+		VAR ID ASSIGN exp               ()
+	|	VAR ID COLON ID ASSIGN exp      ()
 
 (* CFG for declaring a function *)
 funcDec : 
-			FUNCTION ID LPAREN tyfields RPAREN EQ exp       	()
-		|	FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  ()
+		FUNCTION ID LPAREN tyfields RPAREN EQ exp       	()
+	|	FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  ()
 
 (* CFG for array creation *)
 createArray : 
