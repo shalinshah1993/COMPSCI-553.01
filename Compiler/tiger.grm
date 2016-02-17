@@ -15,6 +15,7 @@ structure A = Absyn
 %nonterm  program of A.exp
 		| exp of A.exp
 		| lValue of A.var
+		| lValue_tail
 		| arithmeticExp of A.exp
 		| compExp of A.exp
 		| boolExp of A.exp
@@ -89,8 +90,11 @@ exp :
 
 lValue :
 		ID								()
-	|	lValue DOT ID					()
-	(*|	lValue LBRACK exp RBRACK		() **This is the one conflict *)
+	|	ID lValue_tail					()
+	
+lValue_tail:
+		DOT ID							()
+	|	LBRACK exp RBRACK				()
 		
 
 (* CFG for different exp evaluation *)
