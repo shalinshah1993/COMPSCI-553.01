@@ -20,6 +20,7 @@
 		| compExp
 		| boolExp
 		| noValExp
+		| condExp
 		| expSeq
 		| funcCall
 		| paraList
@@ -36,7 +37,7 @@
 		| recordList
 		| recordField
 
-%name ItIsOurOwnParserBitch
+%name Shah_Lynch_Parser
 %pos int
 %verbose
 
@@ -54,7 +55,8 @@
 %value STRING ("")
 
 (* Precedence in the reverse order *)
-%nonassoc ASSIGN
+%nonassoc ASSIGN THEN OF DO
+%right ELSE
 %left AND OR
 %nonassoc EQ NEQ LT LE GT GE
 %left PLUS MINUS
@@ -64,10 +66,7 @@
 %%
 
 program	: 
-			statement	()		
-
-statement :
-			exp 		()
+			exp			()		
 
 (* CFG for declaring an expression *)
 exp : 	
@@ -80,24 +79,19 @@ exp :
 	|	compExp							()
 	|	boolExp							()
 	|	noValExp						()
-	|	LPAREN expSeq RPAREN 			()
+	|	condExp							()
 	|	funcCall						()
 	|	LET decs IN expSeq END 			()
-	(*|	createArray						()
+	|	createArray						()
 	|	createRecord					()
 	|	lValue ASSIGN exp 				()
-	|	IF exp THEN exp ELSE exp        ()
-  	| 	IF exp THEN exp                 ()
-  	| 	WHILE exp DO exp                ()
-  	|	FOR ID ASSIGN exp TO exp DO exp ()
-  	|	LPAREN expSeq RPAREN 			()*)
 
 
 
 lValue :
 			ID							()
 		|	lValue DOT ID				()
-		|	lValue LBRACE exp RBRACK	()
+		|	lValue LBRACK exp RBRACK	()
 
 (* CFG for different exp evaluation *)
 arithmeticExp :	
@@ -118,13 +112,20 @@ compExp :
 boolExp :
 			exp AND exp 			()
 		|	exp OR exp 				()
+		
+condExp :
+			IF exp THEN exp ELSE exp        ()
+		| 	IF exp THEN exp                 ()
+		| 	WHILE exp DO exp                ()
+		|	FOR ID ASSIGN exp TO exp DO exp ()
+		
 
 noValExp :
 			LPAREN RPAREN			()
 
 expSeq :
-			exp 					()
-		|	expSeq SEMICOLON exp 	()
+			LPAREN expSeq RPAREN 			()
+		|	expSeq SEMICOLON exp 			()
 
 (* CFG to call a function and it's parameter list *)
 funcCall :
@@ -173,11 +174,11 @@ funcDec :
 		|	FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  ()
 
 (* CFG for array creation *)
-(*createArray : 
-				ID LBRACK exp RBRACK OF exp        ()*)
+createArray : 
+				ID LBRACK exp RBRACK OF exp        ()
 
 (* CFG for record creation *)
-(*createRecord : 
+createRecord : 
 				ID LBRACE recordList RBRACE      ()
 
 recordList :    
@@ -186,4 +187,5 @@ recordList :
   					|	recordList COMMA recordField    ()
 
 recordField :
-				ID EQ exp         ()*)
+				ID EQ exp         ()
+		
