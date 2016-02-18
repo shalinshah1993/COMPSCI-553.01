@@ -12,20 +12,20 @@ structure A = Absyn
 	| BREAK | NIL
 	| FUNCTION | VAR | TYPE 
 
-%nonterm  program of A.exp (*DONE*)
+%nonterm  program of A.exp 			(* DONE *)
 		| exp of A.exp
 		| lValue of A.var
 		| lValue_tail of A.exp
-		| arithmeticExp of A.exp (*DONE*)
-		| compExp of A.exp (*DONE*)
-		| boolExp of A.exp (*DONE*)
-		| noValExp of A.exp (*DONE*)
-		| condExp of A.exp
+		| arithmeticExp of A.exp 	(* DONE *)
+		| compExp of A.exp 			(* DONE *)
+		| boolExp of A.exp 			(* DONE *)
+		| noValExp of A.exp 		(* DONE *)
+		| condExp of A.exp 			(* DONE *)
 		| expSeq of A.SeqExp
 		| funcCall
 		| paraList
 		| decs
-		| dec of A.dec (*DONE*)
+		| dec of A.dec 				(* DONE *)
 		| typeDec
 		| ty
 		| tyfield
@@ -72,7 +72,7 @@ program	:
 exp : 	
 		NIL								(A.NilExp)
 	|	INT 							(A.IntExp INT)
-	|	STRING 							(A.StringExp(STRING,STRINGleft))
+	|	STRING 							(A.StringExp(STRING, STRINGleft))
 	|	BREAK							(A.BreakExp(BREAKleft))
 	|	lValue							()
 	|	arithmeticExp					(arithmeticExp)
@@ -82,6 +82,7 @@ exp :
 	|	condExp							(condExp)
 	|	funcCall						(funcCall)
 	|	LET decs IN expSeq END 			(A.LetExp{decs=decs, body=expSeq, pos=LETleft})
+	|	LPAREN expSeq RPAREN 			(A.SeqExp(expSeq))
 	|	createArray						(createArray)
 	|	createRecord					(createRecord)
 	|	lValue ASSIGN exp 				()
@@ -121,15 +122,15 @@ condExp :
 		IF exp THEN exp ELSE exp        (A.IfExp{test=exp1, then'=exp2, else'=SOME(exp3), pos=IFleft})
 	| 	IF exp THEN exp                 (A.IfExp{test=exp1, then'=exp2, else'=NONE, pos=IFleft})
 	| 	WHILE exp DO exp                (A.WhileExp{test=exp1, body=exp2, pos=WHILEleft})
-	|	FOR ID ASSIGN exp TO exp DO exp ()
+	|	FOR ID ASSIGN exp TO exp DO exp (A.ForExp{})
 		
 
 noValExp :
 		LPAREN RPAREN					(A.NilExp)
 
 expSeq :
-		LPAREN expSeq RPAREN 			()
-	|	expSeq SEMICOLON exp 			()
+		exp 				 			([exp, expleft])
+	|	expSeq SEMICOLON exp 			(expSeq @ [(exp, expleft)])
 
 (* CFG to call a function and it's parameter list *)
 funcCall :
