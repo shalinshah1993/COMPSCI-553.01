@@ -22,14 +22,15 @@ open Symbol
 		| noValExp of A.exp 		(* DONE *)
 		| condExp of A.exp 			(* DONE *)
 		| expSeq of A.SeqExp 		(* DONE *)
-		| funcCall of A.exp 		(* DONE *)
+		| funcCall of A.CallExp 		(* DONE *)
 		| paraList of A.exp list	(* DONE *)
 		| decs of A.dec list		(* DONE *)
 		| dec of A.dec 				(* DONE *)
-		| typeDec
-		| ty
-		| tyfield
-		| tyfields
+		| typeDec of A.TypeDec			(* DONE *)
+		| typeDecList of A.TypeDec list	(* DONE *)
+		| ty of A.ty
+		| tyField
+		| tyFields
 		| varDec
 		| funcDec
 		| createArray
@@ -147,25 +148,29 @@ decs :
 	|	decs dec 						(decs @ [dec])
 
 dec :
-		typeDec							(typeDec)
+		typeDecList						(A.TypeDec typeDecList)
 	|	varDec 							(varDec)
 	|	funcDec 						(funcDec)
 
+typeDecList : 
+			typeDec 					([typeDec])
+		|	tydeclist typeDec 			(typeDecList @ [typeDec])
+
 typeDec :  
-		TYPE ID EQ ty 					()
+		TYPE ID EQ ty 					({name=symbol ID, ty=ty, pos=TYPEleft})
 
 ty : 
-		ID                        		()
-  	| 	LBRACE tyfields RBRACE    		()
-  	| 	ARRAY OF ID               		()
+		ID                        		(A.NameTy (symbol ID, IDleft))
+  	| 	LBRACE tyFields RBRACE    		(A.RecordTy tyFields)
+  	| 	ARRAY OF ID               		(A.ArrayTy (symbol ID, ARRAYleft))
 
 (* CFG for list of types associated with an ID: Used as funPar and defining list data type *)
-tyfields :
+tyFields :
 										()
-    |	tyfield 						()
-	|	tyfields COMMA tyfield 			()
+    |	tyField 						()
+	|	tyFields COMMA tyField 			()
 
-tyfield : 
+tyField : 
 		ID COLON ID          			()
 
 (* CFG for decalaring a variables *)
