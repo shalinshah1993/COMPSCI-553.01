@@ -12,26 +12,26 @@ open Symbol
 	| BREAK | NIL
 	| FUNCTION | VAR | TYPE 
 
-%nonterm  program of A.exp 			(* DONE *)
-		| exp of A.exp 				(* DONE *)
-		| lValue of A.var 			(* DONE *)
+%nonterm  program of A.exp 				(* DONE *)
+		| exp of A.exp 					(* DONE *)
+		| lValue of A.var 				(* DONE *)
 		| lValue_tail of A.exp
-		| arithmeticExp of A.exp 	(* DONE *)
-		| compExp of A.exp 			(* DONE *)
-		| boolExp of A.exp 			(* DONE *)
-		| noValExp of A.exp 		(* DONE *)
-		| condExp of A.exp 			(* DONE *)
-		| expSeq of A.SeqExp 		(* DONE *)
+		| arithmeticExp of A.exp 		(* DONE *)
+		| compExp of A.exp 				(* DONE *)
+		| boolExp of A.exp 				(* DONE *)
+		| noValExp of A.exp 			(* DONE *)
+		| condExp of A.exp 				(* DONE *)
+		| expSeq of A.SeqExp 			(* DONE *)
 		| funcCall of A.CallExp 		(* DONE *)
-		| paraList of A.exp list	(* DONE *)
-		| decs of A.dec list		(* DONE *)
-		| dec of A.dec 				(* DONE *)
+		| paraList of A.exp list		(* DONE *)
+		| decs of A.dec list			(* DONE *)
+		| dec of A.dec 					(* DONE *)
 		| typeDec of A.TypeDec			(* DONE *)
 		| typeDecList of A.TypeDec list	(* DONE *)
-		| ty of A.ty
-		| tyField
-		| tyFields
-		| varDec
+		| ty of A.ty 					(* DONE *)
+		| tyField of A.field 			(* DONE *)
+		| tyFields of A.field list 		(* DONE *)
+		| varDec of A.VarDec 			(* DONE *)
 		| funcDec
 		| createArray
 		| createRecord
@@ -154,7 +154,7 @@ dec :
 
 typeDecList : 
 			typeDec 					([typeDec])
-		|	tydeclist typeDec 			(typeDecList @ [typeDec])
+		|	typeDecList typeDec 		(typeDecList @ [typeDec])
 
 typeDec :  
 		TYPE ID EQ ty 					({name=symbol ID, ty=ty, pos=TYPEleft})
@@ -175,13 +175,13 @@ tyField :
 
 (* CFG for decalaring a variables *)
 varDec : 
-		VAR ID ASSIGN exp               ()
+		VAR ID ASSIGN exp               (A.VarDec {name=symbol ID, escape= ref true, typ=NONE, init=exp, pos=VARleft})
 	|	VAR ID COLON ID ASSIGN exp      ()
 
 (* CFG for declaring a function *)
 funcDec : 
-		FUNCTION ID LPAREN tyfields RPAREN EQ exp       	()
-	|	FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  ()
+		FUNCTION ID LPAREN tyFields RPAREN EQ exp       	()
+	|	FUNCTION ID LPAREN tyFields RPAREN COLON ID EQ exp  ()
 
 (* CFG for array creation *)
 createArray : 
