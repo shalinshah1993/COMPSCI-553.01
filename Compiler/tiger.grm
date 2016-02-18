@@ -166,12 +166,12 @@ ty :
 
 (* CFG for list of types associated with an ID: Used as funPar and defining list data type *)
 tyFields :
-										()
-    |	tyField 						()
-	|	tyFields COMMA tyField 			()
+										([])
+    |	tyField 						([tyField])
+	|	tyFields COMMA tyField 			(tyField)
 
 tyField : 
-		ID COLON ID          			()
+		ID COLON ID          			(A.field {name=symbol ID1, escape=ref true, typ=symbol ID2, pos=ID1left})
 
 (* CFG for decalaring a variables *)
 varDec : 
