@@ -15,7 +15,7 @@ open Symbol
 %nonterm  program of A.exp 				(* DONE *)
 		| exp of A.exp 					(* DONE *)
 		| lValue of A.var 				(* DONE *)
-		| lValue_tail of A.exp
+		| notID of A.exp
 		| arithmeticExp of A.exp 		(* DONE *)
 		| compExp of A.exp 				(* DONE *)
 		| boolExp of A.exp 				(* DONE *)
@@ -38,7 +38,6 @@ open Symbol
 		| createRecord of A.RecordExp 	(* DONE *)
 		| recordList of A.RecordTy 		(* DONE *)
 		| recordField of A.field 		(* DONE *)
-		| notID
 
 %name Shah_Lynch_Parser
 %pos int
@@ -97,8 +96,7 @@ lValue :
 	|	notID 							(notID)
 
 notID :
-	 	ID DOT ID							(A.FieldVar(A.simpleVar(symbol ID1), (symbol ID2), ID1left))
-	|	notID DOT ID						(A.FieldVar(notID, (symbol ID), notIDleft))
+		lValue DOT ID						(A.FieldVar(lValue, (symbol ID), notIDleft))
 	|	ID LBRACK exp RBRACK				(A.SubscriptVar(A.simpleVar(ID, IDleft), exp, IDleft))
 	|	notID LBRACK exp RBRACK				(A.SubscriptVar(notID, exp, notIDleft))
 		
