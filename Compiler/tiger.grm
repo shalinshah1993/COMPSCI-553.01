@@ -36,7 +36,7 @@ open Symbol
 		| funcDecList of A.dec			(* EDIT from FunctionDec *)
 		| createArray of A.exp			(* DONE EDIT from ArrayExp*)
 		| createRecord of A.exp 		(* DONE EDIT from REcordExp*)
-		| recordList of A.ty 			(* DONE EDIT from RecordTy*)
+		| recordList of (A.symbol * A.exp * int) list 			(* DONE EDIT from RecordTy*)
 		| recordField of {name: symbol, escape: bool ref, typ: symbol, pos: pos} 		(* DONE *)
 
 %name Shah_Lynch_Parser
