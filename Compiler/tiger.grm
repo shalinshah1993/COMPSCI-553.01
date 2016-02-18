@@ -23,7 +23,7 @@ open Symbol
 		| condExp of A.exp 			(* DONE *)
 		| expSeq of A.SeqExp 		(* DONE *)
 		| funcCall of A.exp 		(* DONE *)
-		| paraList
+		| paraList of A.exp list	(* DONE *)
 		| decs of A.dec list		(* DONE *)
 		| dec of A.dec 				(* DONE *)
 		| typeDec
@@ -122,7 +122,7 @@ condExp :
 		IF exp THEN exp ELSE exp        (A.IfExp {test=exp1, then'=exp2, else'=SOME(exp3), pos=IFleft})
 	| 	IF exp THEN exp                 (A.IfExp {test=exp1, then'=exp2, else'=NONE, pos=IFleft})
 	| 	WHILE exp DO exp                (A.WhileExp {test=exp1, body=exp2, pos=WHILEleft})
-	|	FOR ID ASSIGN exp TO exp DO exp (A.ForExp{})
+	|	FOR ID ASSIGN exp TO exp DO exp (A.ForExp {var=symbol ID, escape= ref true, lo=exp1, hi=exp2, body=exp3, pos=FORleft})
 		
 
 noValExp :
@@ -134,12 +134,12 @@ expSeq :
 
 (* CFG to call a function and it's parameter list *)
 funcCall :
-		ID LPAREN paraList RPAREN		(A.CallExp{func=symbol ID, args=explist, pos=IDleft})
+		ID LPAREN paraList RPAREN		(A.CallExp{func=symbol ID, args=paraList, pos=IDleft})
 
 paraList :
 										([])
 	|	exp 							([exp])
-	|	paraList COMMA exp 				(explist @ [exp])
+	|	paraList COMMA exp 				(paraList @ [exp])
 
 (* CFG for declaring data type *)
 decs :
