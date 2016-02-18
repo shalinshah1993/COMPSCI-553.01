@@ -21,22 +21,22 @@ open Symbol
 		| boolExp of A.exp 				(* DONE *)
 		| noValExp of A.exp 			(* DONE *)
 		| condExp of A.exp 				(* DONE *)
-		| expSeq of A.SeqExp 			(* DONE *)
-		| funcCall of A.CallExp 		(* DONE *)
+		| expSeq of A.exp 				(* DONE  EDIT from SeqExp*)
+		| funcCall of A.exp				(* DONE  EDIT from CallExp*)
 		| paraList of A.exp list		(* DONE *)
 		| decs of A.dec list			(* DONE *)
 		| dec of A.dec 					(* DONE *)
-		| typeDec of A.TypeDec			(* DONE *)
-		| typeDecList of A.TypeDec list	(* DONE *)
+		| typeDec of A.dec				(* DONE EDIT from TypeDec*)
+		| typeDecList of A.dec list		(* DONE EDIT TypeDec list*)
 		| ty of A.ty 					(* DONE *)
 		| tyField of A.field 			(* DONE *)
 		| tyFields of A.field list 		(* DONE *)
-		| varDec of A.VarDec 			(* DONE *)
+		| varDec of A.dec 				(* DONE EDIT from VarDec*)
 		| funcDec of A.fundec 			(* DONE *)
-		| funcDecList of A.FunctionDec
-		| createArray of A.ArrayExp 	(* DONE *)
-		| createRecord of A.RecordExp 	(* DONE *)
-		| recordList of A.RecordTy 		(* DONE *)
+		| funcDecList of A.dec			(* EDIT from FunctionDec *)
+		| createArray of A.exp			(* DONE EDIT from ArrayExp*)
+		| createRecord of A.exp 		(* DONE EDIT from REcordExp*)
+		| recordList of A.ty 			(* DONE EDIT from RecordTy*)
 		| recordField of A.field 		(* DONE *)
 
 %name Shah_Lynch_Parser
@@ -87,7 +87,7 @@ exp :
 	|	LPAREN expSeq RPAREN 			(A.SeqExp(expSeq))
 	|	createArray						(createArray)
 	|	createRecord					(createRecord)
-	|	lValue ASSIGN exp 				(A.AssignExp {var=lvalue, exp=exp, pos=lValueleft})
+	|	lValue ASSIGN exp 				(A.AssignExp {var=lValue, exp=exp, pos=lValueleft})
 
 
 
@@ -97,7 +97,7 @@ lValue :
 
 notID :
 		lValue DOT ID						(A.FieldVar(lValue, (symbol ID), notIDleft))
-	|	ID LBRACK exp RBRACK				(A.SubscriptVar(A.simpleVar(ID, IDleft), exp, IDleft))
+	|	ID LBRACK exp RBRACK				(A.SubscriptVar(A.SimpleVar(ID, IDleft), exp, IDleft))
 	|	notID LBRACK exp RBRACK				(A.SubscriptVar(notID, exp, notIDleft))
 		
 
@@ -107,7 +107,7 @@ arithmeticExp :
 	|	exp DIVIDE exp 					(A.OpExp {left=exp1, oper=A.DivideOp, right=exp2, pos=exp1left})
 	|	exp PLUS exp 					(A.OpExp {left=exp1, oper=A.PlusOp, right=exp2, pos=exp1left})
 	|	exp MINUS exp 					(A.OpExp {left=exp1, oper=A.MinusOp, right=exp2, pos=exp1left})
-	|	MINUS exp %prec UMINUS 			(A.OpExp ({left = A.IntExp(0), oper = A.MinusOp, right = exp, pos = pos}))
+	|	MINUS exp %prec UMINUS 			(A.OpExp ({left = A.IntExp(0), oper = A.MinusOp, right = exp, pos = MINUSleft}))
 
 compExp :
 		exp EQ exp 						(A.OpExp {left=exp1, oper=A.EqOp, right=exp2, pos=exp1left})

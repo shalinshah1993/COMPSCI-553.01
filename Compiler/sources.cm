@@ -1,8 +1,11 @@
 Group is
 
 absyn.sml
+symbol.sml
 prabsyn.sml
 errormsg.sml
+table.sig
+table.sml
 tokens.sig
 tokens.sml
 tiger.lex
