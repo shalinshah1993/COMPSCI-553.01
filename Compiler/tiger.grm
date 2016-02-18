@@ -37,7 +37,7 @@ open Symbol
 		| createArray of A.exp			(* DONE EDIT from ArrayExp*)
 		| createRecord of A.exp 		(* DONE EDIT from REcordExp*)
 		| recordList of (A.symbol * A.exp * int) list 			(* DONE EDIT from RecordTy*)
-		| recordField of {name: symbol, escape: bool ref, typ: symbol, pos: pos} 		(* DONE *)
+		| recordField of (A.symbol * A.exp * int)		(* DONE *)
 
 %name Shah_Lynch_Parser
 %pos int
