@@ -38,6 +38,7 @@ open Symbol
 		| createRecord of A.RecordExp 	(* DONE *)
 		| recordList of A.RecordTy 		(* DONE *)
 		| recordField of A.field 		(* DONE *)
+		| notID
 
 %name Shah_Lynch_Parser
 %pos int
@@ -93,11 +94,13 @@ exp :
 
 lValue :
 		ID								(A.SimpleVar(symbol ID, IDleft))
-	|	ID lValue_tail					()
-	
-lValue_tail :
-		DOT ID							()
-	|	LBRACK exp RBRACK				()
+	|	notID 							(notID)
+
+notID :
+	 	ID DOT ID							(A.FieldVar(A.simpleVar(symbol ID1), (symbol ID2), ID1left))
+	|	notID DOT ID						(A.FieldVar(notID, (symbol ID), notIDleft))
+	|	ID LBRACK exp RBRACK				(A.SubscriptVar(A.simpleVar(ID, IDleft), exp, IDleft))
+	|	notID LBRACK exp RBRACK				(A.SubscriptVar(notID, exp, notIDleft))
 		
 
 (* CFG for different exp evaluation *)
@@ -149,14 +152,13 @@ decs :
 	|	decs dec 						(decs @ [dec])
 
 dec :
-		typeDecList						(A.TypeDec typeDecList)
+		typeDec							(A.TypeDec [typeDec])
 	|	varDec 							(varDec)
-	|	funcDecList						(A.FunctionDec funcDecList)
+	|	funcDec							(A.FunctionDec [funcDec])
 
-typeDecList : 
+(* typeDecList : 
 			typeDec 					([typeDec])
-		|	typeDecList typeDec 		(typeDecList @ [typeDec])
-
+		|	typeDecList typeDec 		(typeDecList @ [typeDec]) *)
 typeDec :  
 		TYPE ID EQ ty 					({name=symbol ID, ty=ty, pos=TYPEleft})
 
@@ -180,9 +182,9 @@ varDec :
 	|	VAR ID COLON ID ASSIGN exp      (A.VarDec {name=symbol ID1, escape= ref true, typ=SOME (symbol ID2, ID2left), init=exp, pos=VARleft})
 
 (* CFG for declaring a function *)
-funcDecList : 
+(* funcDecList : 
 				funcDec                              ([funcDec])
-			|	funcDecList funcDec                  (funcDecList @ [funcDec])
+			|	funcDecList funcDec                  (funcDecList @ [funcDec]) *)
 
 funcDec : 
 		FUNCTION ID LPAREN tyFields RPAREN EQ exp       	({name=symbol ID, params=tyFields, result=NONE, body=exp, pos=FUNCTIONleft})
