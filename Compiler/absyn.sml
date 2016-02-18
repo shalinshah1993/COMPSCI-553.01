@@ -34,7 +34,8 @@ struct
     and oper = PlusOp | MinusOp | TimesOp | DivideOp | EqOp | NeqOp | LtOp | LeOp | GtOp | GeOp
 
     withtype field = {name: symbol, escape: bool ref, typ: symbol, pos: pos}
-       and   fundec = {name: symbol, params: field list, result: (symbol * pos) option, body: exp, pos: pos}
-       
+
+    and fundec = {name: symbol, params: field list, result: (symbol * pos) option, body: exp, pos: pos}
+
 end
         
