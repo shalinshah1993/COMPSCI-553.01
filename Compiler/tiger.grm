@@ -26,18 +26,18 @@ open Symbol
 		| paraList of A.exp list		(* DONE *)
 		| decs of A.dec list			(* DONE *)
 		| dec of A.dec 					(* DONE *)
-		| typeDec of A.dec				(* DONE EDIT from TypeDec*)
+		| typeDec of {name: Symbol.symbol, ty: A.ty, pos: pos}	(* DONE EDIT from TypeDec*)
 		| typeDecList of A.dec list		(* DONE EDIT TypeDec list*)
 		| ty of A.ty 					(* DONE *)
-		| tyField of A.field 			(* DONE *)
-		| tyFields of A.field list 		(* DONE *)
+		| tyField of {name: symbol, escape: bool ref, typ: symbol, pos: pos} 			(* DONE *)
+		| tyFields of {name: symbol, escape: bool ref, typ: symbol, pos: pos} list 		(* DONE *)
 		| varDec of A.dec 				(* DONE EDIT from VarDec*)
 		| funcDec of A.fundec 			(* DONE *)
 		| funcDecList of A.dec			(* EDIT from FunctionDec *)
 		| createArray of A.exp			(* DONE EDIT from ArrayExp*)
 		| createRecord of A.exp 		(* DONE EDIT from REcordExp*)
 		| recordList of A.ty 			(* DONE EDIT from RecordTy*)
-		| recordField of A.field 		(* DONE *)
+		| recordField of {name: symbol, escape: bool ref, typ: symbol, pos: pos} 		(* DONE *)
 
 %name Shah_Lynch_Parser
 %pos int
@@ -169,10 +169,10 @@ ty :
 tyFields :
 										([])
     |	tyField 						([tyField])
-	|	tyFields COMMA tyField 			(tyField)
+	|	tyFields COMMA tyField 			(tyFields @ [tyField])
 
 tyField : 
-		ID COLON ID          			(A.field {name=symbol ID1, escape=ref true, typ=symbol ID2, pos=ID1left})
+		ID COLON ID          			({name=symbol ID1, escape=ref true, typ=symbol ID2, pos=ID1left})
 
 (* CFG for decalaring a variables *)
 varDec : 
