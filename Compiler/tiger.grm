@@ -1,5 +1,5 @@
 structure A = Absyn
-
+open Symbol
 %%
 %term EOF 
 	| ID of string
@@ -21,10 +21,10 @@ structure A = Absyn
 		| boolExp of A.exp 			(* DONE *)
 		| noValExp of A.exp 		(* DONE *)
 		| condExp of A.exp 			(* DONE *)
-		| expSeq of A.SeqExp
-		| funcCall
+		| expSeq of A.SeqExp 		(* DONE *)
+		| funcCall of A.exp 		(* DONE *)
 		| paraList
-		| decs
+		| decs of A.dec list		(* DONE *)
 		| dec of A.dec 				(* DONE *)
 		| typeDec
 		| ty
@@ -81,7 +81,7 @@ exp :
 	|	noValExp						(noValExp)
 	|	condExp							(condExp)
 	|	funcCall						(funcCall)
-	|	LET decs IN expSeq END 			(A.LetExp{decs=decs, body=expSeq, pos=LETleft})
+	|	LET decs IN expSeq END 			(A.LetExp{decs=decs, body=A.SeqExp(expSeq), pos=LETleft})
 	|	LPAREN expSeq RPAREN 			(A.SeqExp(expSeq))
 	|	createArray						(createArray)
 	|	createRecord					(createRecord)
@@ -104,7 +104,7 @@ arithmeticExp :
 	|	exp DIVIDE exp 					(A.OpExp{left=exp1, oper=A.DivideOp, right=exp2, pos=exp1left})
 	|	exp PLUS exp 					(A.OpExp{left=exp1, oper=A.PlusOp, right=exp2, pos=exp1left})
 	|	exp MINUS exp 					(A.OpExp{left=exp1, oper=A.MinusOp, right=exp2, pos=exp1left})
-	|	MINUS exp %prec UMINUS 			()
+	|	MINUS exp %prec UMINUS 			(A.OpExp({left = A.IntExp(0), oper = A.MinusOp, right = exp, pos = pos}))
 
 compExp :
 		exp EQ exp 						(A.OpExp{left=exp1, oper=A.EqOp, right=exp2, pos=exp1left})
@@ -134,7 +134,7 @@ expSeq :
 
 (* CFG to call a function and it's parameter list *)
 funcCall :
-		ID LPAREN paraList RPAREN		()
+		ID LPAREN paraList RPAREN		(A.CallExp{func=symbol ID, args=explist, pos=IDleft})
 
 paraList :
 										([])
@@ -144,7 +144,7 @@ paraList :
 (* CFG for declaring data type *)
 decs :
 										(A.NilExp)
-	|	decs dec 						()
+	|	decs dec 						(decs @ [dec])
 
 dec :
 		typeDec							(typeDec)
