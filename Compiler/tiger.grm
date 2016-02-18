@@ -15,13 +15,13 @@ open Symbol
 %nonterm  program of A.exp 				(* DONE *)
 		| exp of A.exp 					(* DONE *)
 		| lValue of A.var 				(* DONE *)
-		| notID of A.exp
+		| notID of A.var
 		| arithmeticExp of A.exp 		(* DONE *)
 		| compExp of A.exp 				(* DONE *)
 		| boolExp of A.exp 				(* DONE *)
 		| noValExp of A.exp 			(* DONE *)
 		| condExp of A.exp 				(* DONE *)
-		| expSeq of A.exp 				(* DONE  EDIT from SeqExp*)
+		| expSeq of (A.exp * pos) list	(* DONE  EDIT from SeqExp*)
 		| funcCall of A.exp				(* DONE  EDIT from CallExp*)
 		| paraList of A.exp list		(* DONE *)
 		| decs of A.dec list			(* DONE *)
@@ -96,8 +96,8 @@ lValue :
 	|	notID 							(notID)
 
 notID :
-		lValue DOT ID						(A.FieldVar(lValue, (symbol ID), notIDleft))
-	|	ID LBRACK exp RBRACK				(A.SubscriptVar(A.SimpleVar(ID, IDleft), exp, IDleft))
+		lValue DOT ID						(A.FieldVar(lValue, (symbol ID), lValueleft))
+	|	ID LBRACK exp RBRACK				(A.SubscriptVar(A.SimpleVar(symbol ID, IDleft), exp, IDleft))
 	|	notID LBRACK exp RBRACK				(A.SubscriptVar(notID, exp, notIDleft))
 		
 
@@ -132,7 +132,7 @@ noValExp :
 		LPAREN RPAREN					(A.NilExp)
 
 expSeq :
-		exp 				 			([exp, expleft])
+		exp 				 			([(exp, expleft)])
 	|	expSeq SEMICOLON exp 			(expSeq @ [(exp, expleft)])
 
 (* CFG to call a function and it's parameter list *)
@@ -150,9 +150,9 @@ decs :
 	|	decs dec 						(decs @ [dec])
 
 dec :
-		typeDec							(A.TypeDec [typeDec])
+		typeDec							(A.TypeDec [(typeDec)])
 	|	varDec 							(varDec)
-	|	funcDec							(A.FunctionDec [funcDec])
+	|	funcDec							(A.FunctionDec [(funcDec)])
 
 (* typeDecList : 
 			typeDec 					([typeDec])
