@@ -12,20 +12,20 @@ structure A = Absyn
 	| BREAK | NIL
 	| FUNCTION | VAR | TYPE 
 
-%nonterm  program of A.exp
+%nonterm  program of A.exp (*DONE*)
 		| exp of A.exp
 		| lValue of A.var
-		| lValue_tail
-		| arithmeticExp of A.exp
-		| compExp of A.exp
-		| boolExp of A.exp
-		| noValExp of A.exp
+		| lValue_tail of A.exp
+		| arithmeticExp of A.exp (*DONE*)
+		| compExp of A.exp (*DONE*)
+		| boolExp of A.exp (*DONE*)
+		| noValExp of A.exp (*DONE*)
 		| condExp of A.exp
 		| expSeq of A.SeqExp
 		| funcCall
 		| paraList
 		| decs
-		| dec
+		| dec of A.dec (*DONE*)
 		| typeDec
 		| ty
 		| tyfield
@@ -72,8 +72,8 @@ program	:
 exp : 	
 		NIL								(A.NilExp)
 	|	INT 							(A.IntExp INT)
-	|	STRING 							()
-	|	BREAK							()
+	|	STRING 							(A.StringExp(STRING,STRINGleft))
+	|	BREAK							(A.BreakExp(BREAKleft))
 	|	lValue							()
 	|	arithmeticExp					(arithmeticExp)
 	|	compExp							(compExp)
@@ -81,7 +81,7 @@ exp :
 	|	noValExp						(noValExp)
 	|	condExp							(condExp)
 	|	funcCall						(funcCall)
-	|	LET decs IN expSeq END 			()
+	|	LET decs IN expSeq END 			(A.LetExp{decs=decs, body=expSeq, pos=LETleft})
 	|	createArray						(createArray)
 	|	createRecord					(createRecord)
 	|	lValue ASSIGN exp 				()
@@ -99,28 +99,28 @@ lValue_tail:
 
 (* CFG for different exp evaluation *)
 arithmeticExp :	
-		exp TIMES exp 					()
-	|	exp DIVIDE exp 					()
-	|	exp PLUS exp 					()
-	|	exp MINUS exp 					()
+		exp TIMES exp 					(A.OpExp{left=exp1, oper=A.TimesOp, right=exp2, pos=exp1left})
+	|	exp DIVIDE exp 					(A.OpExp{left=exp1, oper=A.DivideOp, right=exp2, pos=exp1left})
+	|	exp PLUS exp 					(A.OpExp{left=exp1, oper=A.PlusOp, right=exp2, pos=exp1left})
+	|	exp MINUS exp 					(A.OpExp{left=exp1, oper=A.MinusOp, right=exp2, pos=exp1left})
 	|	MINUS exp %prec UMINUS 			()
 
 compExp :
-		exp EQ exp 						()
-	|	exp NEQ exp 					()
-	| 	exp GT exp 						()
-	|	exp GE exp 						()
-	|	exp LT exp 						()
-	| 	exp LE exp 						()
+		exp EQ exp 						(A.OpExp{left=exp1, oper=A.EqOp, right=exp2, pos=exp1left})
+	|	exp NEQ exp 					(A.OpExp{left=exp1, oper=A.NeqOp, right=exp2, pos=exp1left})
+	| 	exp GT exp 						(A.OpExp{left=exp1, oper=A.GtOp, right=exp2, pos=exp1left})
+	|	exp GE exp 						(A.OpExp{left=exp1, oper=A.GeOp, right=exp2, pos=exp1left})
+	|	exp LT exp 						(A.OpExp{left=exp1, oper=A.LtOp, right=exp2, pos=exp1left})
+	| 	exp LE exp 						(A.OpExp{left=exp1, oper=A.LeOp, right=exp2, pos=exp1left})
 
 boolExp :
-		exp AND exp 					()
-	|	exp OR exp 						()
+		exp AND exp 					(A.IfExp{test=exp1, then'=exp2, else'=SOME(A.IntExp(0)), pos=exp1left})
+	|	exp OR exp 						(A.IfExp{test=exp1, then'=A.IntExp(1), else'=SOME(exp2), pos=exp1left})
 		
 condExp :
-		IF exp THEN exp ELSE exp        ()
-	| 	IF exp THEN exp                 ()
-	| 	WHILE exp DO exp                ()
+		IF exp THEN exp ELSE exp        (A.IfExp{test=exp1, then'=exp2, else'=SOME(exp3), pos=IFleft})
+	| 	IF exp THEN exp                 (A.IfExp{test=exp1, then'=exp2, else'=NONE, pos=IFleft})
+	| 	WHILE exp DO exp                (A.WhileExp{test=exp1, body=exp2, pos=WHILEleft})
 	|	FOR ID ASSIGN exp TO exp DO exp ()
 		
 
@@ -146,9 +146,9 @@ decs :
 	|	decs dec 						()
 
 dec :
-		typeDec							()
-	|	varDec 							()
-	|	funcDec 						()
+		typeDec							(typeDec)
+	|	varDec 							(varDec)
+	|	funcDec 						(funcDec)
 
 typeDec :  
 		TYPE ID EQ ty 					()
