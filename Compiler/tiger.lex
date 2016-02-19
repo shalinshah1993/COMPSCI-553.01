@@ -1,5 +1,10 @@
+type svalue = Tokens.svalue
 type pos = int
-type lexresult = Tokens.token
+type ('a, 'b) token = ('a, 'b) Tokens.token
+type lexresult = (svalue, pos) Tokens.token
+
+(*type pos = int
+type lexresult = Tokens.token*)
 
 (* Keep a check on Nested String/Comments*)
 val nestedComment = ref 0
@@ -49,6 +54,7 @@ fun appendEscape(text, pos) =
 		| NONE => ErrorMsg.error pos ("illegal escape sequence " ^ text)
 
 %% 
+%header (functor TigerLexFun(structure Tokens: Tiger_TOKENS));
 %s COMMENT STRING FEED;
 alpha=[a-zA-Z];
 digit=[0-9];

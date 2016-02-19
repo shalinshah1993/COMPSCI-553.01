@@ -1,28 +1,15 @@
 Group is
 
-(*absyn.sml
-parsetest.sml
-symbol.sml
-prabsyn.sml
-errormsg.sml
-table.sig
-table.sml
-tokens.sig
-tokens.sml
-tiger.lex
-tiger.grm*)
-
 absyn.sml
-errormsg.sml
-(*parse.sml*)
 prabsyn.sml
-symbol.sml
+errormsg.sml
 table.sig
 table.sml
-tiger.grm
+symbol.sml
+parse.sml
 tiger.lex
+tiger.grm
 tokens.sig
-tokens.sml
 
 
 $/basis.cm
