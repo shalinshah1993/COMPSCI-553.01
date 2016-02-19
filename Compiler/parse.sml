@@ -1,10 +1,12 @@
 structure Parse : sig val parse : string -> Absyn.exp  end =
 struct 
+  
   structure TigerLrVals = TigerLrValsFun(structure Token = LrParser.Token)
   structure Lex = TigerLexFun(structure Tokens = TigerLrVals.Tokens)
   structure TigerP = Join(structure ParserData = TigerLrVals.ParserData
 			structure Lex=Lex
 			structure LrParser = LrParser)
+  
   fun parse filename =
       let val _ = (ErrorMsg.reset(); ErrorMsg.fileName := filename)
 	  val file = TextIO.openIn filename

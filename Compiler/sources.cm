@@ -1,16 +1,21 @@
 Group is
 
-absyn.sml
-prabsyn.sml
 errormsg.sml
-table.sig
-table.sml
-symbol.sml
-parse.sml
+
+
 tiger.lex
 tiger.grm
-tokens.sig
+absyn.sml
+symbol.sml
 
+(*table.sig
+table.sml
+absyn.sml
+symbol.sml
+tiger.grm
+
+prabsyn.sml*)
+parse.sml
 
 $/basis.cm
 $/smlnj-lib.cm

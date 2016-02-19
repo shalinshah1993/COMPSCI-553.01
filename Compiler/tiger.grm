@@ -10,36 +10,36 @@ open Symbol
 	| AND | OR | ASSIGN
 	| ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
 	| BREAK | NIL
-	| FUNCTION | VAR | TYPE 
+	| FUNCTION | VAR | TYPE | NSTSTRERR | NSTCOMERR
 
-%nonterm  program of A.exp 				(* DONE *)
-		| exp of A.exp 					(* DONE *)
-		| lValue of A.var 				(* DONE *)
+%nonterm  program of A.exp 				
+		| exp of A.exp 					
+		| lValue of A.var 				
 		| notID of A.var
-		| arithmeticExp of A.exp 		(* DONE *)
-		| compExp of A.exp 				(* DONE *)
-		| boolExp of A.exp 				(* DONE *)
-		| noValExp of A.exp 			(* DONE *)
-		| condExp of A.exp 				(* DONE *)
-		| expSeq of (A.exp * pos) list	(* DONE  EDIT from SeqExp*)
-		| funcCall of A.exp				(* DONE  EDIT from CallExp*)
-		| paraList of A.exp list		(* DONE *)
-		| decs of A.dec list			(* DONE *)
-		| dec of A.dec 					(* DONE *)
-		| typeDec of {name: Symbol.symbol, ty: A.ty, pos: pos}	(* DONE EDIT from TypeDec*)
-		| typeDecList of A.dec list		(* DONE EDIT TypeDec list*)
-		| ty of A.ty 					(* DONE *)
-		| tyField of {name: symbol, escape: bool ref, typ: symbol, pos: pos} 			(* DONE *)
-		| tyFields of {name: symbol, escape: bool ref, typ: symbol, pos: pos} list 		(* DONE *)
-		| varDec of A.dec 				(* DONE EDIT from VarDec*)
-		| funcDec of A.fundec 			(* DONE *)
-		| funcDecList of A.dec			(* EDIT from FunctionDec *)
-		| createArray of A.exp			(* DONE EDIT from ArrayExp*)
-		| createRecord of A.exp 		(* DONE EDIT from REcordExp*)
-		| recordList of (A.symbol * A.exp * int) list 			(* DONE EDIT from RecordTy*)
-		| recordField of (A.symbol * A.exp * int)		(* DONE *)
+		| arithmeticExp of A.exp 		
+		| compExp of A.exp 				
+		| boolExp of A.exp 				
+		| noValExp of A.exp 			
+		| condExp of A.exp 				
+		| expSeq of (A.exp * pos) list	
+		| funcCall of A.exp				
+		| paraList of A.exp list		
+		| decs of A.dec list			
+		| dec of A.dec 					
+		| typeDec of {name: Symbol.symbol, ty: A.ty, pos: pos}	
+		| typeDecList of A.dec list		
+		| ty of A.ty 					
+		| tyField of {name: symbol, escape: bool ref, typ: symbol, pos: pos} 			
+		| tyFields of {name: symbol, escape: bool ref, typ: symbol, pos: pos} list 		
+		| varDec of A.dec 				
+		| funcDec of A.fundec 			
+		| funcDecList of A.dec			
+		| createArray of A.exp			
+		| createRecord of A.exp 		
+		| recordList of (A.symbol * A.exp * int) list 			
+		| recordField of (A.symbol * A.exp * int)		
 
-%name Shah_Lynch_Parser
+%name Tiger
 %pos int
 %verbose
 
