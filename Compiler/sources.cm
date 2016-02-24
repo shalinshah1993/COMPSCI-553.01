@@ -6,15 +6,11 @@ errormsg.sml
 tiger.lex
 tiger.grm
 absyn.sml
+prabsyn.sml
 symbol.sml
-
-(*table.sig
+table.sig
 table.sml
-absyn.sml
-symbol.sml
-tiger.grm
 
-prabsyn.sml*)
 parse.sml
 
 $/basis.cm
