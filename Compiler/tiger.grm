@@ -96,9 +96,9 @@ lValue :
 	|	notID 							(notID)
 
 notID :
-		lValue DOT ID						(A.FieldVar(lValue, (symbol ID), lValueleft))
-	|	ID LBRACK exp RBRACK				(A.SubscriptVar(A.SimpleVar(symbol ID, IDleft), exp, IDleft))
-	|	notID LBRACK exp RBRACK				(A.SubscriptVar(notID, exp, notIDleft))
+		lValue DOT ID					(A.FieldVar(lValue, (symbol ID), lValueleft))
+	|	ID LBRACK exp RBRACK			(A.SubscriptVar(A.SimpleVar(symbol ID, IDleft), exp, IDleft))
+	|	notID LBRACK exp RBRACK			(A.SubscriptVar(notID, exp, notIDleft))
 		
 
 (* CFG for different exp evaluation *)
@@ -190,16 +190,16 @@ funcDec :
 
 (* CFG for array creation *)
 createArray : 
-				ID LBRACK exp RBRACK OF exp        (A.ArrayExp {typ=symbol ID, size=exp1, init=exp2, pos=IDleft})
+				ID LBRACK exp RBRACK OF exp        			(A.ArrayExp {typ=symbol ID, size=exp1, init=exp2, pos=IDleft})
 
 (* CFG for record creation *)
 createRecord : 
-				ID LBRACE recordList RBRACE      (A.RecordExp {fields=recordList, typ=symbol ID, pos=IDleft})
+				ID LBRACE recordList RBRACE      			(A.RecordExp {fields=recordList, typ=symbol ID, pos=IDleft})
 
 recordList :    
-                        							    ([])
-  					|	recordField                     ([recordField])
-  					|	recordList COMMA recordField    (recordList @ [recordField])
+                        							    	([])
+  					|	recordField                     	([recordField])
+  					|	recordList COMMA recordField    	(recordList @ [recordField])
 
 recordField :
-				ID EQ exp         ((symbol ID, exp, IDleft))
+				ID EQ exp         							((symbol ID, exp, IDleft))
