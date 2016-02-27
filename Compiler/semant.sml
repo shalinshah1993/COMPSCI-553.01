@@ -7,8 +7,17 @@ struct
 
 structure A = Absyn
 
+type venv = Env.enventry Symbol.table
+type tenv = ty Symbol.table
+
+(* NEED a CHECKINT function *)
+
 fun transVar(venv, tenv) = (* Make this more general for multiple types of Absyn.var *)
-    let fun subTransVar (A.SimpleVar(sym, pos)) = ()
+    let fun subTransVar (A.SimpleVar(id, pos)) = 
+	  (case Symbol.look(venv,id) of
+	      SOME(E.VarEntry(ty)) => {exp=(), ty=actual_ty ty}
+				   | NONE  => (error pos ("undefined variable " ^ S.name id);
+					       exp(), ty=Types.INT))
 	  | subTransVar (A.FieldVar(var,sym,pos)) = ()
 	  | subTransVar (A.SubscriptVar(bar,exp,pos)) = ()  
 
