@@ -14,9 +14,9 @@ struct
  	type expty = {exp: Translate.exp, ty: T.ty}
 
 	type venv = Env.enventry Symbol.table
-	type tenv = ty Symbol.table*)
+	type tenv = ty Symbol.table
 
-	fun checkInt({exp,ty}, pos) =
+	(*fun checkInt({exp,ty}, pos) =
 	  case ty of
 	      T.INT => ()
 	    | _  => error pos "Expected type INT, found type " ^ ty
@@ -112,6 +112,6 @@ struct
 		subTransTy ty
 	    end
 
-	fun transProg x = (); (* TODO *)
+	fun transProg x = (); (* TODO *)*)
 
 end
