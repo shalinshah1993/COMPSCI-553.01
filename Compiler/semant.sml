@@ -50,14 +50,14 @@ struct
 				true
 			else if evalType1 = T.NIL then 
 				case evalType1 of
-					T.NIL => (error pos1 "You cannot compare NIL expressions. Grr!"; false)
-					| T.RECORD _ => true
-					| _ => evalType1 = evalType1
-			else if evalType1 = T.NIL then 
-				case evalType1 of
 					T.NIL => (error pos2 "You cannot compare NIL expressions. Grr!"; false)
 					| T.RECORD _ => true
 					| _ => evalType1=evalType1
+			else if evalType1 = T.NIL then 
+				case evalType1 of
+					T.NIL => (error pos1 "You cannot compare NIL expressions. Grr!"; false)
+					| T.RECORD _ => true
+					| _ => evalType1 = evalType1
 			else 
 				evalType1 = evalType1
 		end
@@ -66,19 +66,19 @@ struct
 	fun checkInt({exp,ty}, pos) =
 		case ty of
 			T.INT => ()
-			| _  => error pos "Shouldn't you type be INT?"
+			| _  => error pos "Shouldn't you type INT here?"
 	
 	fun checkUnit ({exp=exp, ty=ty}, pos) =
 		if isSubType(ty, T.UNIT, pos, pos) then 
 			()
 	  	else 
-	  		error pos "Shouldn't you type be UNIT?"
+	  		error pos "Shouldn't you type UNIT here?"
 
 	fun checkString ({exp=exp, ty=ty}, pos) =
 		if isSubType(ty, T.STRING, pos, pos) then 
 			()
 		else 
-			error pos "Shouldn't you type be STRING?"
+			error pos "Shouldn't you type STRING here?"
 
 	(* AST Traverse Function to type-check/ translate *)
 	fun transExp (venv, tenv, expr) = 
