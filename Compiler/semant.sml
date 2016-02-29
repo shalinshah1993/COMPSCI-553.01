@@ -120,7 +120,7 @@ struct
 						if (#ty (transVar(venv, tenv, var))) = (#ty (trExp(venv, tenv, exp))) then 
 							{exp=(),ty=T.UNIT}
 					  	else 
-					  		(error pos "Types of variable and assigned expression do not match"; {exp=(),ty=T.ERROR})
+					  		(error pos "Cannot evaluate the assignment expression, types cannot be compared. Grrrr! "; {exp=(),ty=T.ERROR})
 
 				|	trExp (A.RecordExp {fields=fields, typ=typ, pos=pos}) = {exp=(), ty=T.NIL}								(* TODO *)
 				|	trExp (A.LetExp {decs=decs,body=body,pos=pos}) = {exp=(), ty=T.NIL}										(* TODO *)
