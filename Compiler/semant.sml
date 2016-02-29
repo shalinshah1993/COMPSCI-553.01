@@ -68,6 +68,18 @@ struct
 			T.INT => ()
 			| _  => error pos "type INT required at this position"
 	
+	fun checkUnit ({exp=exp, ty=ty}, pos) =
+		if compareTypes(ty, T.UNIT, pos, pos) then 
+			()
+	  	else 
+	  		error pos "type UNIT required at this position"
+
+	fun checkString ({exp=exp, ty=ty}, pos) =
+		if compareTypes(ty, T.STRING, pos, pos) then 
+			()
+		else 
+			error pos "type STRING required at this position"
+
 	(* AST Traverse Function to type-check/ translate *)
 	fun transExp (venv, tenv, expr) = 
 		let
@@ -105,7 +117,7 @@ struct
 								(error pos "Could not discern operator type"; {exp=(), ty=T.NIL})
 
 					|	trExp (A.AssignExp{var=var,exp=exp,pos=pos}) = 
-							if (#ty (transVar(venv, tenv, var))) = (#ty (transExp(venv, tenv, exp))) then 
+							if (#ty (trVar(venv, tenv, var))) = (#ty (trExp(venv, tenv, exp))) then 
 								{exp=(),ty=T.UNIT}
 						  	else 
 						  		(error pos "Types of variable and assigned expression do not match"; {exp=(),ty=T.ERROR})
