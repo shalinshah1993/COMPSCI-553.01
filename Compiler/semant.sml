@@ -72,8 +72,7 @@ struct
 	fun transExp (venv, tenv, expr) = 
 		let
 				fun trExp (A.NilExp) = {exp=(), ty=T.NIL}
-					|	trExp (A.IntExp exp) = {exp=(), ty=T.INT}
-					|	trExp (A.StringExp (exp, pos)) = {exp=(), ty=T.STRING}
+					|	trExp (A.VarExp v) = {exp=(), ty=T.NIL}																	(* TODO *)
 
 					| 	trExp (A.SeqExp(exps)) = 
 							let
@@ -84,15 +83,10 @@ struct
 								parseExps(exps)
 							end
 
-					|	trExp (A.RecordExp {fields=fields, typ=typ, pos=pos}) = {exp=(), ty=T.NIL}								(* TODO *)
-					|	trExp (A.AssignExp{var=var,exp=exp,pos=pos}) = {exp=(), ty=T.NIL}										(* TODO *)
-					|	trExp (A.LetExp {decs=decs,body=body,pos=pos}) = {exp=(), ty=T.NIL}										(* TODO *)
+					|	trExp (A.IntExp exp) = {exp=(), ty=T.INT}
+					|	trExp (A.StringExp (exp, pos)) = {exp=(), ty=T.STRING}
+
 					|	trExp (A.CallExp {func=func, args=args, pos=pos}) = {exp=(), ty=T.NIL} 									(* TODO *)
-					|	trExp (A.IfExp {test=test, then'=thenExp, else'=elseExp, pos=pos}) = {exp=(), ty=T.NIL} 				(* TODO *)
-					|	trExp (A.ForExp {var=var, escape=escape, lo=lo, hi=hi, body=body, pos=pos})= {exp=(), ty=T.NIL} 		(* TODO *)
-					|	trExp (A.WhileExp {test=test, body=body, pos=pos}) = {exp=(), ty=T.NIL} 								(* TODO *)
-					|	trExp (A.BreakExp pos) = {exp=(), ty=T.NIL} 															(* TODO *)
-					|	trExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = {exp=(), ty=T.NIL} 						(* TODO *)
 
 					|	trExp (A.OpExp{left=leftExp, oper=oper, right=rightExp, pos=pos}) = 
 							if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
@@ -109,6 +103,22 @@ struct
 								end
 							else
 								(error pos "Could not discern operator type"; {exp=(), ty=T.NIL})
+
+					|	trExp (A.AssignExp{var=var,exp=exp,pos=pos}) = 
+							if (#ty (transVar(venv, tenv, var))) = (#ty (transExp(venv, tenv, exp))) then 
+								{exp=(),ty=T.UNIT}
+						  	else 
+						  		(error pos "Types of variable and assigned expression do not match"; {exp=(),ty=T.ERROR})
+
+					|	trExp (A.RecordExp {fields=fields, typ=typ, pos=pos}) = {exp=(), ty=T.NIL}								(* TODO *)
+					|	trExp (A.LetExp {decs=decs,body=body,pos=pos}) = {exp=(), ty=T.NIL}										(* TODO *)
+					|	trExp (A.IfExp {test=test, then'=thenExp, else'=elseExp, pos=pos}) = {exp=(), ty=T.NIL} 				(* TODO *)
+					|	trExp (A.ForExp {var=var, escape=escape, lo=lo, hi=hi, body=body, pos=pos})= {exp=(), ty=T.NIL} 		(* TODO *)
+					|	trExp (A.WhileExp {test=test, body=body, pos=pos}) = {exp=(), ty=T.NIL} 								(* TODO *)
+					|	trExp (A.BreakExp pos) = {exp=(), ty=T.NIL} 															(* TODO *)
+					|	trExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = {exp=(), ty=T.NIL} 						(* TODO *)
+
+					
 		in
 			trExp(expr)
 		end
