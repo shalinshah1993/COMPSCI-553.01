@@ -72,38 +72,45 @@ struct
 	fun transExp (venv, tenv, expr) = 
 		let
 				fun trExp (A.NilExp) = {exp=(), ty=T.NIL}
-				|	trExp (A.IntExp exp) = {exp=(), ty=T.INT}
-				|	trExp (A.StringExp (exp, pos)) = {exp=(), ty=T.STRING}
+					|	trExp (A.IntExp exp) = {exp=(), ty=T.INT}
+					|	trExp (A.StringExp (exp, pos)) = {exp=(), ty=T.STRING}
 
-				| 	trExp (A.SeqExp exps) = {exp=(), ty=T.NIL}
-
-				|	trExp (A.RecordExp {fields=fields, typ=typ, pos=pos}) = {exp=(), ty=T.NIL}								(* TODO *)
-				|	trExp (A.AssignExp{var=var,exp=exp,pos=pos}) = {exp=(), ty=T.NIL}										(* TODO *)
-				|	trExp (A.LetExp {decs=decs,body=body,pos=pos}) = {exp=(), ty=T.NIL}										(* TODO *)
-				|	trExp (A.CallExp {func=func, args=args, pos=pos}) = {exp=(), ty=T.NIL} 									(* TODO *)
-				|	trExp (A.IfExp {test=test, then'=thenExp, else'=elseExp, pos=pos}) = {exp=(), ty=T.NIL} 				(* TODO *)
-				|	trExp (A.ForExp {var=var, escape=escape, lo=lo, hi=hi, body=body, pos=pos})= {exp=(), ty=T.NIL} 		(* TODO *)
-				|	trExp (A.WhileExp {test=test, body=body, pos=pos}) = {exp=(), ty=T.NIL} 								(* TODO *)
-				|	trExp (A.BreakExp pos) = {exp=(), ty=T.NIL} 															(* TODO *)
-				|	trExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = {exp=(), ty=T.NIL} 						(* TODO *)
-
-				|	trExp (A.OpExp{left=leftExp, oper=oper, right=rightExp, pos=pos}) = 
-						if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
-							(checkInt(transExp(venv, tenv, leftExp), pos); checkInt(transExp(venv, tenv, rightExp), pos); {exp=(), ty=T.INT})
-						else if (oper=A.EqOp orelse oper=A.NeqOp) then
+					| 	trExp (A.SeqExp(exps)) = 
 							let
-								val {exp=exp, ty=leftType} = transExp(venv, tenv, leftExp)
-								val {exp=exp, ty=rightType} = transExp(venv, tenv, rightExp)
+								fun parseExps([]) = {exp = (), ty = T.UNIT}
+									|	parseExps((exp, pos)::[]) = transExp(venv, tenv, exp)
+									|	parseExps((exp, pos)::l) = (transExp(venv, tenv, exp); parseExps(l))
 							in
-								if (compareTypes (leftType, rightType, pos, pos) orelse compareTypes (rightType, leftType, pos, pos)) then 
-									{exp=(), ty=T.INT}
-						  		else 
-						  		  	((ErrorMsg.error pos "Comparison two different types. Grrrr!"); {exp=(),ty=T.ERROR})
+								parseExps(exps)
 							end
-						else
-							(error pos "Could not discern operator type"; {exp=(), ty=T.NIL})
+
+					|	trExp (A.RecordExp {fields=fields, typ=typ, pos=pos}) = {exp=(), ty=T.NIL}								(* TODO *)
+					|	trExp (A.AssignExp{var=var,exp=exp,pos=pos}) = {exp=(), ty=T.NIL}										(* TODO *)
+					|	trExp (A.LetExp {decs=decs,body=body,pos=pos}) = {exp=(), ty=T.NIL}										(* TODO *)
+					|	trExp (A.CallExp {func=func, args=args, pos=pos}) = {exp=(), ty=T.NIL} 									(* TODO *)
+					|	trExp (A.IfExp {test=test, then'=thenExp, else'=elseExp, pos=pos}) = {exp=(), ty=T.NIL} 				(* TODO *)
+					|	trExp (A.ForExp {var=var, escape=escape, lo=lo, hi=hi, body=body, pos=pos})= {exp=(), ty=T.NIL} 		(* TODO *)
+					|	trExp (A.WhileExp {test=test, body=body, pos=pos}) = {exp=(), ty=T.NIL} 								(* TODO *)
+					|	trExp (A.BreakExp pos) = {exp=(), ty=T.NIL} 															(* TODO *)
+					|	trExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = {exp=(), ty=T.NIL} 						(* TODO *)
+
+					|	trExp (A.OpExp{left=leftExp, oper=oper, right=rightExp, pos=pos}) = 
+							if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
+								(checkInt(transExp(venv, tenv, leftExp), pos); checkInt(transExp(venv, tenv, rightExp), pos); {exp=(), ty=T.INT})
+							else if (oper=A.EqOp orelse oper=A.NeqOp) then
+								let
+									val {exp=exp, ty=leftType} = transExp(venv, tenv, leftExp)
+									val {exp=exp, ty=rightType} = transExp(venv, tenv, rightExp)
+								in
+									if (compareTypes (leftType, rightType, pos, pos) orelse compareTypes (rightType, leftType, pos, pos)) then 
+										{exp=(), ty=T.INT}
+							  		else 
+							  		  	((ErrorMsg.error pos "Comparison two different types. Grrrr!"); {exp=(),ty=T.ERROR})
+								end
+							else
+								(error pos "Could not discern operator type"; {exp=(), ty=T.NIL})
 		in
-			trExp(exp)
+			trExp(expr)
 		end
 
 	(* Main function which traverses the AST *)
