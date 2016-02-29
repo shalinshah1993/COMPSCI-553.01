@@ -73,7 +73,16 @@ struct
 		|	transExp (venv, tenv, (A.IntExp exp)) = {exp=(), ty=T.INT}
 		|	transExp (venv, tenv, A.StringExp (exp, pos)) = {exp=(), ty=T.STRING}
 
-		|	transExp (venv, tenv, A.CallExp {func=func, args=args, pos=pos}) = {exp=(), ty=T.ERROR} 					(* TODO *)
+		| 	transExp (venv, tenv, A.SeqExp exps) = {exp=(), ty=T.NIL}															(* TODO *)
+		|	transExp (venv, tenv, A.RecordExp {fields=fields, typ=typ, pos=pos}) = {exp=(), ty=T.NIL}							(* TODO *)
+		|	transExp (venv, tenv, A.AssignExp{var=var,exp=exp,pos=pos}) = {exp=(), ty=T.NIL}									(* TODO *)
+		|	transExp (venv, tenv, A.LetExp {decs=decs,body=body,pos=pos}) = {exp=(), ty=T.NIL}									(* TODO *)
+		|	transExp (venv, tenv, A.CallExp {func=func, args=args, pos=pos}) = {exp=(), ty=T.NIL} 								(* TODO *)
+		|	transExp (venv, tenv, A.IfExp {test=test, then'=thenExp, else'=elseExp, pos=pos}) = {exp=(), ty=T.NIL} 				(* TODO *)
+		|	transExp (venv, tenv, A.ForExp {var=var, escape=escape, lo=lo, hi=hi, body=body, pos=pos})= {exp=(), ty=T.NIL} 		(* TODO *)
+		|	transExp (venv, tenv, A.WhileExp {test=test, body=body, pos=pos}) = {exp=(), ty=T.NIL} 								(* TODO *)
+		|	transExp (venv, tenv, A.BreakExp pos) = {exp=(), ty=T.NIL} 															(* TODO *)
+		|	transExp (venv, tenv, A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = {exp=(), ty=T.NIL} 					(* TODO *)
 
 		|	transExp (venv, tenv, A.OpExp{left=leftExp, oper=oper, right=rightExp, pos=pos}) = 
 				if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
@@ -91,6 +100,6 @@ struct
 				else
 					(error pos "Could not discern operator type"; {exp=(), ty=T.NIL})
 
-	fun transProg x = (); (* TODO *)
+	fun transProg x = (); 																										(* TODO *)
 
 end
