@@ -140,8 +140,8 @@ struct
 				SOME(E.VarEntry(ty)) => {exp=(), ty=actual_ty ty}
 				| NONE => (error pos ("Undefined variable " ^ S.name id);
 							{exp=(), ty=Types.INT}))
-			|	subTransVar (A.FieldVar(var,sym,pos)) = ()
-			|	subTransVar	(A.SubscriptVar(bar,exp,pos)) = ()
+			|	subTransVar (A.FieldVar(var,sym,pos)) = {exp=(), ty=T.ERROR}
+			|	subTransVar	(A.SubscriptVar(bar,exp,pos)) = {exp=(),ty=T.ERROR}
 		in
 			subTransVar varty
 		end
