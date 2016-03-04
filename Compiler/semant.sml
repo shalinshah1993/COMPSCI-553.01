@@ -42,24 +42,24 @@ struct
 	fun isSubType (type1: T.ty, type2: T.ty, pos1: A.pos, pos2: A.pos) = 
 		let
 			val evalType1 = actual_ty (type1, pos1)
-			val evalType1 = actual_ty (type2, pos2)
+			val evalType2 = actual_ty (type2, pos2)
 		in 
-			if evalType1 = T.ERROR orelse evalType1 = T.ERROR then 
+			if evalType1 = T.ERROR orelse evalType2 = T.ERROR then 
 				true 
-			else if evalType1 = T.UNIT then 
+			else if evalType2 = T.UNIT then 
 				true
-			else if evalType1 = T.NIL then 
+			else if evalType2 = T.NIL then 
 				case evalType1 of
 					T.NIL => (error pos2 "You cannot compare NIL expressions. Grr!"; false)
 					| T.RECORD _ => true
-					| _ => evalType1=evalType1
+					| _ => evalType1 = evalType2
 			else if evalType1 = T.NIL then 
-				case evalType1 of
+				case evalType2 of
 					T.NIL => (error pos1 "You cannot compare NIL expressions. Grr!"; false)
 					| T.RECORD _ => true
-					| _ => evalType1 = evalType1
+					| _ => evalType1 = evalType2
 			else 
-				evalType1 = evalType1
+				evalType1 = evalType2
 		end
 
 	(* Check type of operand to INT *)
