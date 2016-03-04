@@ -5,9 +5,9 @@ sig
 	type expty
 	type ty
 
-	(*val transVar: venv * tenv * Absyn.var -> expty *)
 	val transExp: venv * tenv * Absyn.exp -> expty
-	(*val transDec: venv * tenv * Absyn.dec -> {venv: venv, tenv: tenv} *)
+	val transVar: venv * tenv * Absyn.var -> expty 
+	val transDec: venv * tenv * Absyn.dec -> {venv: venv, tenv: tenv} 
 	(*val transTy: tenv * Absyn.ty -> ty*)
 	
 	val transProg: Absyn.exp -> unit
@@ -16,15 +16,15 @@ end
 struct
 
 	structure A = Absyn
+	structure E = Env
 	structure P = PrintAbsyn
 	structure S = Symbol
-	structure E = Env
 	structure T = Types
+	structure Tr = Translate
 
 	type venv = Env.enventry Symbol.table
 	type tenv = T.ty Symbol.table
-
- 	type expty = {exp: Translate.exp, ty: T.ty}
+ 	type expty = {exp: Tr.exp, ty: T.ty}
  	type ty = T.ty
 
  	val error = ErrorMsg.error
@@ -64,9 +64,10 @@ struct
 
 	(* Check type of operand to INT *)
 	fun checkInt({exp,ty}, pos) =
-		case ty of
-			T.INT => ()
-			| _  => error pos "Shouldn't you type INT here?"
+		if isSubType(ty, T.INT, pos, pos) then
+			()
+		else
+			error pos "Shouldn't you type INT here?"
 	
 	fun checkUnit ({exp=exp, ty=ty}, pos) =
 		if isSubType(ty, T.UNIT, pos, pos) then 
@@ -131,6 +132,46 @@ struct
 				|	trExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = {exp=(), ty=T.NIL} 						(* TODO *)
 		in
 			trExp(expr)
+		end
+		
+	and transVar(venv, tenv, varty) =
+		let 
+			fun subTransVar (A.SimpleVar(id,pos)) = (case Symbol.look(venv,id) of
+				SOME(E.VarEntry(ty)) => {exp=(), ty=actual_ty ty}
+				| NONE => (error pos ("Undefined variable " ^ S.name id);
+							{exp=(), ty=Types.INT}))
+			|	subTransVar (A.FieldVar(var,sym,pos)) = {exp=(), ty=T.ERROR}
+			|	subTransVar	(A.SubscriptVar(bar,exp,pos)) = {exp=(),ty=T.ERROR}
+		in
+			subTransVar varty
+		end
+		
+	and transDec(venv, tenv, decty) =
+		let 
+			fun subTransDec(A.FunctionDec [{name, params, result=SOME(rt,pos),body,pos}]) = 
+				let
+					val SOME(result_ty) = S.look(tenv,rt)
+					fun transparam(name,typ,pos) =
+						case S.look(tenv,typ) of
+							SOME t => {name=name, ty=t}
+					val params' = map transparam params
+					val venv' = S.enter(venv,name,E.FunEntry{formals = map #ty params', result=result_ty})
+					fun enterparam({name,ty},venv) =
+						S.enter(vev,name,E.VarEntry{access=(),ty=ty})
+					val venv'' = fold enterparam params' venv'
+				in
+					transExp(venv'',tenv) body;
+					{venv=venv',tenv=tenv}
+				end
+			|	subTransDec (A.VarDec{name, escape, type=NONE, init, pos}) = 
+				let 
+					val {exp,ty} = transExp(venv,tenv,init)
+				in
+					{tenv=tenv,venv=S.enter(venv,name,E.VarEntry{ty=ty})}
+				end
+			|	subTransDec (A.TypeDec[{name, ty, pos}]) = {venv=venv, tenv=S.enter(tenv,name,transTy(tenv,ty))}
+		in
+			subTransDec decty
 		end
 
 	(* Main function which traverses the AST *)
