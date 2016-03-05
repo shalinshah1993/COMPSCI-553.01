@@ -1,23 +1,28 @@
-structure Env :
+signature ENV =
 sig
 	type access
-	datatype enventry = VarEntry of {ty: Types.ty}
-	                |	FunEntry of {formals: Types.ty list, result: Types.ty}
-	val base_tenv : Types.ty Symbol.table
-	val base_venv : enventry Symbol.table
+	type ty
+	datatype enventry = 
+		VarEntry of Types.ty
+		| FunEntry of {formals: Types.ty list, result: Types.ty}
+	val base_tenv : ty Symbol.table		(* predefined types *)
+	val base_venv : enventry Symbol.table (* predefined functions *)
 end
-=
+structure Env :> ENV =
 struct
+(* This isn't VETTED *)
 	structure T = Types
 	structure S = Symbol
 
 	type access = unit 			(* TODO *)
-	datatype enventry = VarEntry of {ty: Types.ty}
-	                |	FunEntry of {formals: Types.ty list, result: Types.ty}
+	type ty = T.ty
+	datatype enventry = VarEntry of T.ty
+	                |	FunEntry of {formals: T.ty list, result: T.ty}
 
     (* Mapping int -> Ty.INT and string -> Ty.STRING *)
     val preDefTypes = [("int", T.INT), ("string", T.STRING)]
-    fun mapType((name, ty), table) = Symbol.enter(table, Symbol.symbol name, ty)
+    fun mapType((name, ty), table) = 
+		Symbol.enter(table, Symbol.symbol name, ty)
     val base_tenv = foldr mapType S.empty preDefTypes
 
     (* Mapping variable/ function to type/ parameters and return value *)
@@ -31,6 +36,8 @@ struct
 			 		("concat", FunEntry {formals=[T.STRING, T.STRING], result=T.STRING}), 
 			 		("not", FunEntry {formals=[T.INT], result=T.INT}), 
 			 		("exit", FunEntry {formals=[T.INT], result=T.UNIT})]
-	fun mapVar((name, enventry), table) = Symbol.enter(table, S.symbol name, enventry)
-	val base_venv = foldr mapVar S.empty preDefVar	
-end 
+	fun mapVar((name, enventry), table) = 
+		Symbol.enter(table, S.symbol name, enventry)
+	val base_venv = foldr mapVar S.empty preDefVar
+(* End of NON-VETTED stuff *)
+end
