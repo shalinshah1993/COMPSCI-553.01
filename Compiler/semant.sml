@@ -227,7 +227,12 @@ struct
 	and transDec(venv,tenv,dec) = 
 		let 
 			fun subTransDec (A.FunctionDec fundec) = {venv=venv,tenv=tenv}
-			| subTransDec (A.VarDec {name=name, escape=escape, typ=typ, init=init, pos=pos}) = {venv=venv,tenv=tenv}
+			| subTransDec (A.VarDec {name=name, escape=escape, typ=typ, init=init, pos=pos}) = 
+				let 
+					val {exp=varExp, ty=varTy} = transExp(venv,tenv,init)
+				in
+					{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv}
+				end
 			| subTransDec (A.TypeDec [{name=name, ty=ty, pos=pos}]) = {venv=venv,tenv=S.enter(tenv,name,transTy(tenv,ty))}
 			| subTransDec (_) = {venv=venv,tenv=tenv}
 		in
