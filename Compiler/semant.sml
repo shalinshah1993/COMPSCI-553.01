@@ -239,9 +239,11 @@ struct
 				(case S.look(tenv, tySym) of
 					SOME (t) => t
 					| NONE => (Er.error pos ("Undefined type "^S.name(tySym)); T.ERROR))
-			| subTransTy (A.RecordTy [field]) = T.ERROR
-			| subTransTy (A.ArrayTy (sym,pos)) = T.ERROR
-			| subTransTy (_) = T.ERROR
+			| subTransTy (A.RecordTy field) = T.ERROR
+			| subTransTy (A.ArrayTy (sym,pos)) =
+				(case S.look(tenv,sym) of
+					SOME (t) => T.ARRAY(t, ref())
+					| NONE => (Er.error pos("Undefined type "^S.name(sym)); T.ERROR))
 		in
 			subTransTy ty
 		end
