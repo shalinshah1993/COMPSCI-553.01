@@ -95,7 +95,28 @@ struct
 					
 				else
 					(Er.error pos "Could not discern the operator type"; {exp=(), ty=T.ERROR})
-			| subTransExp (A.RecordExp {fields=fields, typ=typ, pos=pos}) = {exp=(), ty=T.ERROR}
+			| subTransExp (A.RecordExp {fields=fields, typ=typ, pos=pos}) = 
+				let 
+					val T.RECORD(fieldTypes, unique) = 
+						(case S.look(tenv,typ) of
+							SOME(t) => actual_ty (t,pos)
+							| NONE => (Er.error pos ("Undefined field type"); T.RECORD([], ref())))
+					fun resolveFieldLists((symbol, exp, pos)::fieldList, (tySymbol,ty)::fieldTypeList) =
+						if(S.name symbol = S.name tySymbol) then
+							if (assertSubTypes(#ty (transExp(venv,tenv,exp)), actual_ty(ty,pos), pos, pos) = true) then
+								resolveFieldLists(fieldList,fieldTypeList)
+							else
+								(Er.error pos ("Field and type are not able to resolve to the same subtypes");false)
+						else
+							(Er.error pos ("Field and type cannot be resolved to same symbol");false)
+					| resolveFieldLists([],[]) = true (*Everything has been resolved from the previous lists*)
+					| resolveFieldLists(_,_) = false (*Makes the list of matches exhaustive, hides compiler error*)
+				in
+					if (resolveFieldLists(fields, fieldTypes)) then
+						{exp=(), ty=T.RECORD(fieldTypes, ref())}
+					else
+						{exp=(), ty=T.ERROR}
+				end
 			| subTransExp (A.SeqExp exps) = 
 				let
 					fun subTransExps ([]) = {exp=(), ty=T.UNIT}
