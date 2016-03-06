@@ -242,7 +242,20 @@ struct
 				(case S.look(tenv, tySym) of
 					SOME (t) => t
 					| NONE => (Er.error pos ("Undefined type "^S.name(tySym)); T.ERROR))
-			| subTransTy (A.RecordTy field) = T.ERROR
+			| subTransTy (A.RecordTy field) =
+				let 
+					val fieldVals =
+						let
+							fun extractFieldInfo({name, escape, typ, pos}) =
+								(case S.look(tenv, typ) of
+									SOME (t) => (name, t)
+									| NONE => (Er.error pos("Undefined type"^S.name(name)); (name, T.ERROR)))
+						in
+							map extractFieldInfo field
+						end
+				in
+					T.RECORD(fieldVals, ref())
+				end
 			| subTransTy (A.ArrayTy (sym,pos)) =
 				(case S.look(tenv,sym) of
 					SOME (t) => T.ARRAY(t, ref())
