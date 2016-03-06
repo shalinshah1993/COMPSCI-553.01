@@ -173,17 +173,6 @@ struct
 				in
 					transExp(finalVenv, finalTenv, body)
 				end
-						
-			
-			(*
-			let
-					fun subTransExps ([]) = {exp=(), ty=T.UNIT}
-					| subTransExps ((exp, pos)::[]) = transExp(venv, tenv, exp)
-					| subTransExps((exp, pos)::l) = (transExp(venv,tenv,exp);subTransExps l);
-				in
-					subTransExps exps
-				end
-			*)
 			| subTransExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = 
 				(* Size must be int, init must be same type as basetype of array, and typ itself must be an array *)
 				let
@@ -210,7 +199,14 @@ struct
 				(case S.look(venv, simVar) of
 					SOME (E.VarEntry(t)) => {exp=(), ty=actual_ty(t,pos)}
 					| _ => (Er.error pos ("Undefined variable " ^ S.name(simVar)); {exp=(), ty=T.ERROR}))
-			| subTransVar (A.FieldVar fieldVar) = {exp=(), ty=T.ERROR}
+			| subTransVar (A.FieldVar (var, symbol, pos)) = 
+				let
+					val {exp=varExp, ty=varType} = transVar(venv, tenv, var);
+				in
+					(case varType of
+						T.RECORD(fields, unique) => {exp=(), ty=(actual_ty (varType,pos))} 
+						| _ => (Er.error pos ("Field variable must be of type T.RECORD"); {exp=(), ty=T.ERROR}))
+				end
 			| subTransVar (A.SubscriptVar (var, exp, pos)) = 
 				(let
 					val {exp=varExp, ty=varType} = transVar(venv,tenv,var);
@@ -226,7 +222,9 @@ struct
 		end
 	and transDec(venv,tenv,dec) = 
 		let 
-			fun subTransDec (A.FunctionDec fundec) = {venv=venv,tenv=tenv}
+			fun subTransDec (A.FunctionDec funcs) = 
+				{venv=venv, tenv=tenv}
+				
 			| subTransDec (A.VarDec {name=name, escape=escape, typ=typ, init=init, pos=pos}) = 
 				let 
 					val {exp=varExp, ty=varTy} = transExp(venv,tenv,init)
