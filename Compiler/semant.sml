@@ -313,5 +313,13 @@ struct
 			subTransTy ty
 		end
 	
-	fun transProg expr = ()
+	(* Main function which traverses the AST *)
+	fun transProg expr = 
+		let
+			val tenv = E.base_tenv
+			val venv = E.base_venv
+			val tree = transExp(tenv, venv, expr)
+		in
+			()
+	end
 end;
