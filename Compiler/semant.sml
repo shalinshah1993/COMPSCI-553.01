@@ -288,8 +288,52 @@ struct
 	and transDec(venv,tenv,dec) = 
 		let 
 			fun subTransDec (A.FunctionDec funcs) = 
-				{venv=venv, tenv=tenv}
-				
+				(let
+					fun getReturnType res =
+						case (case res of
+								SOME (rt,p) => S.look(tenv,rt)
+								| NONE => NONE) of
+							SOME(t) => t
+							| NONE => T.UNIT
+					fun processHeader ({name=name, params=params, result=result, body=body, pos=pos}, newVenv)=
+						let
+							fun transparam{name,escape,typ,pos} =
+								case S.look(tenv,typ) of
+									SOME t => t
+									| NONE => (Er.error pos ("Could not resolve the type of the parameter when processing header"); T.ERROR)
+							val params' = map transparam params
+						in
+							S.enter(newVenv, name, E.FunEntry {formals = params', result = getReturnType(result)})
+						end
+					fun processBody(venv, {name=name, params=params,result=result, body=body, pos=pos}::func) = 
+						let
+							fun enterparam({name,escape,typ,pos}, newVenv) =
+								let
+									val ty =
+										case S.look(tenv,typ) of
+											SOME t => t
+											| NONE => (Er.error pos ("Could not resolve the type of the parameter when processing function body");T.ERROR)
+								in
+									S.enter(newVenv, name, E.VarEntry(ty))
+								end
+							val venv' = foldr enterparam venv params
+							val {exp=bodyExp, ty=bodyTy} = transExp(venv', tenv, body)
+						in
+							(if assertSubTypes(bodyTy, getReturnType(result), pos, pos) then
+								(if (assertEqualTypes(getReturnType(result), T.UNIT, pos, pos) andalso assertEqualTypes(bodyTy, T.UNIT, pos, pos) <> true) then
+									(Er.error pos ("Function body should be of type T.UNIT"))
+								else
+									())
+								
+							else
+								Er.error pos ("Function body and return do not have same types");
+							processBody(venv, func))
+						end
+					val venv' = foldr processHeader venv funcs;
+				in
+					(processBody(venv', funcs);
+					{venv = venv', tenv=tenv})
+				end)
 			| subTransDec (A.VarDec {name=name, escape=escape, typ=typ, init=init, pos=pos}) = 
 				let 
 					val {exp=varExp, ty=varTy} = transExp(venv,tenv,init)
