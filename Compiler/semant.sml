@@ -5,12 +5,12 @@ sig
 	type tenv
 	type ty
 	
-val transVar: venv * tenv * Absyn.var -> expty (*For var expressions*)
-val	transExp: venv * tenv * Absyn.exp -> expty (*For exp expressions*)
-val	transDec: venv * tenv * Absyn.dec -> {venv: venv, tenv: tenv} (*For dec expressions*)
-val	transTy: tenv * Absyn.ty -> Types.ty (*For ty expressions*)
-	
-val	transProg: Absyn.exp -> unit
+	val transVar: venv * tenv * Absyn.var -> expty 
+	val	transExp: venv * tenv * Absyn.exp -> expty 
+	val	transDec: venv * tenv * Absyn.dec -> {venv: venv, tenv: tenv} 
+	val	transTy: tenv * Absyn.ty -> Types.ty 
+		
+	val	transProg: Absyn.exp -> unit
 end
 
 structure Semant :> SEMANT =
@@ -24,8 +24,11 @@ struct
 	
 	type expty = {exp: Tr.exp, ty: T.ty}
 	type venv = E.enventry S.table
+	type tenv = T.ty S.table
 	type ty = T.ty
-	type tenv = ty S.table
+
+	val loopDepth = ref 0
+	val breakCount = ref 0
 
 	(* Helper Functions *)
 	fun actual_ty (ty: T.ty, pos: A.pos) =
@@ -76,7 +79,6 @@ struct
 			| subTransExp (A.NilExp) = {exp=(), ty=T.NIL}
 			| subTransExp (A.IntExp i) = {exp=(), ty=T.INT}
 			| subTransExp (A.StringExp (str,pos)) = {exp=(), ty=T.STRING}
-
 			| subTransExp (A.CallExp {func=func, args=args, pos=pos}) = 
 				(
 				case S.look(venv, func) of 
@@ -101,7 +103,6 @@ struct
 						end
 					|  _ => (Er.error pos "No such function exists"; {exp=(),ty=T.ERROR})
 				)
-					
 			| subTransExp (A.OpExp {left=left, oper=oper, right=right, pos=pos}) = 
 				if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
 					(checkType(transExp(venv,tenv,left),T.UNIT,pos);
@@ -184,8 +185,11 @@ struct
 						end))
 			| subTransExp (A.WhileExp {test=test, body=body, pos=pos}) = 
 				let
+					val _ = loopDepth := !loopDepth + 1
 					val testExpTy = transExp(venv,tenv,test)
 					val bodyExpTy = transExp(venv,tenv,body)
+					val _ = loopDepth := !loopDepth - 1
+					val _ = breakCount := 0
 				in
 					(checkType(testExpTy, T.INT, pos);
 					checkType(bodyExpTy, T.UNIT, pos);
@@ -193,17 +197,30 @@ struct
 				end
 			| subTransExp (A.ForExp {var=var, escape=escape, lo=lo, hi=hi, body=body, pos=pos}) = 
 				let
+					val _ = loopDepth := !loopDepth + 1
 					val venv' = S.enter(venv, var, (E.VarEntry (T.INT)))
 					val bodyExpTy = transExp(venv', tenv, body)
 					val loExpTy = transExp(venv', tenv, lo)
 					val hiExpTy = transExp(venv', tenv, hi)
+					val _ = loopDepth := !loopDepth - 1
+					val _ = breakCount := 0
 				in
 					(checkType(loExpTy, T.INT, pos);
 					checkType(hiExpTy, T.INT, pos);
 					checkType(bodyExpTy, T.UNIT, pos);
 					{exp=(), ty=T.UNIT})
 				end
-			| subTransExp (A.BreakExp pos) = {exp=(), ty=T.ERROR}
+			| subTransExp (A.BreakExp pos) = 
+				let
+					val _ = breakCount := !breakCount + 1
+				in
+					if !loopDepth = 0 then
+						(Er.error pos "BREAK can occur only inside a loop"; { exp=(), ty=T.ERROR })
+					else if !breakCount > 1 then
+						(Er.error pos "No more loops to BREAK!"; { exp=(), ty=T.ERROR})
+					else
+						{ exp=(), ty=T.UNIT }
+				end
 			| subTransExp (A.LetExp {decs=decs, body=body, pos=pos}) =
 				let
 					fun extractDec (venv,tenv,decs) = 
@@ -314,12 +331,12 @@ struct
 		end
 	
 	(* Main function which traverses the AST *)
-	fun transProg expr = 
+	fun transProg (expr:A.exp) = 
 		let
-			val tenv = E.base_tenv
-			val venv = E.base_venv
-			val tree = transExp(tenv, venv, expr)
+			val venv = Env.base_venv
+			val tenv = Env.base_tenv
+			val tree = transExp(venv, tenv, expr)
 		in
 			()
 	end
-end;
+end
