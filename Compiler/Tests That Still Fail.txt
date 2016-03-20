@@ -7,7 +7,6 @@ Tests that still fail
 12
 38 - recursive, same names
 39 - recursive, same names
-42 - A little bit, Can look into
 
 Tests to Check for further errors in future
 -------------------------------------------
