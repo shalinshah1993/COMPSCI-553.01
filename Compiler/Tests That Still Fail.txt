@@ -5,13 +5,9 @@ Tests that still fail
 6 - Recursion issue
 7 - Recursion issue
 12
-28 - Record Comparison
-29 - Array Comparison
-30 - Variable synonyms
-31 - Type Constraints
 38 - recursive, same names
 39 - recursive, same names
-42 - A LOT
+42 - A little bit, Can look into
 
 Tests to Check for further errors in future
 -------------------------------------------

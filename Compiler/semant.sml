@@ -29,8 +29,6 @@ struct
 
 	val loopDepth = ref 0
 	val breakCount = ref 0
-
-	
 	
 	(* Helper Functions *)
 	fun actual_ty (ty: T.ty, pos: A.pos) =
@@ -141,7 +139,7 @@ struct
 					| resolveFieldLists(_,_) = false (*Makes the list of matches exhaustive, hides compiler error*)
 				in
 					if (resolveFieldLists(fields, fieldTypes)) then
-						{exp=(), ty=T.RECORD(fieldTypes, ref())}
+						{exp=(), ty=T.RECORD(fieldTypes, unique)}
 					else
 						(Er.error pos "Could not resolve the record field list";{exp=(), ty=T.ERROR})
 				end
@@ -277,25 +275,25 @@ struct
 					transExp(finalVenv, finalTenv, body)
 				end
 			| subTransExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = 
-				(* Size must be int, init must be same type as basetype of array, and typ itself must be an array *)
 				let
 					val sizeExpTy = transExp(venv,tenv,size);
 					val initExpTy = transExp(venv,tenv,init);
-					val baseType =
-						(case S.look(tenv,typ) of
-							SOME (ty) => 
-								(case (actual_ty(ty,pos)) of
-									T.ARRAY(baseType, unique) => T.INT
-									| _ => (Er.error pos ("Cannot define an array as anything other than as an array"); T.ERROR))
-							| NONE => (Er.error pos ("Could not define base type of array"); T.ERROR));
 				in
-					(if (checkInt(sizeExpTy, pos))  then
-						(if assertSubTypes(#ty initExpTy, baseType, pos,pos) then
-							{exp=(), ty=baseType}
-						else
-							(Er.error pos "Type mismatch between initial expression and base type"; {exp=(), ty=T.ERROR}))
-					else
-						(Er.error pos "SIZE of array must be defined as an INT"; {exp=(), ty=T.ERROR}))
+					(case S.look(tenv,typ) of
+						SOME (ty) =>
+							(case (actual_ty(ty,pos)) of
+								T.ARRAY(t,u) =>
+									if (checkInt(sizeExpTy,pos)) then
+										if (assertSubTypes(t, #ty initExpTy, pos, pos)) then
+											{exp=(), ty=T.ARRAY(t,u)}
+										else
+											(Er.error pos ("Type mismatch between initial expression and base type"); {exp=(), ty=T.ERROR})
+									else
+										(Er.error pos "SIZE of array must be defined as an INT"; {exp=(), ty=T.ERROR})
+								| _ => 
+									(Er.error pos ("Cannot define an array as anything other than as an array"); {exp=(), ty=T.ERROR}))
+						| NONE =>
+							(Er.error pos ("Could not define base type of array"); {exp=(), ty=T.ERROR}))
 				end
 		in
 			subTransExp exp
@@ -391,7 +389,7 @@ struct
 				let 
 					val {exp=varExp, ty=varTy} = transExp(venv,tenv,init)
 				in
-					((case varTy of
+					(case varTy of
 						T.NIL =>
 							( case typ of
 								NONE => ((Er.error pos "No initial type to assign VALUE to ");{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})
@@ -404,7 +402,19 @@ struct
 										| NONE => ((Er.error pos "NIL type of assigned value cannot be constrained by undefined variable type");{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})
 											))
 						| _ =>
-							({venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})))
+							((case typ of
+								NONE=> ({venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})
+								| SOME((t,p)) =>
+									(case S.look(tenv,t) of
+										SOME(tyyy) =>
+											if varTy = actual_ty(tyyy,p) 
+											then
+												({venv=S.enter(venv,name,E.VarEntry(tyyy)),tenv=tenv})
+											else 
+												(
+												((Er.error pos ("TYPE mismatch between variable type and intilization value type "));{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv}))
+										| NONE =>
+											((Er.error pos "Type of variable is undefined");{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})))))
 				end
 			| subTransDec (A.TypeDec [{name=name, ty=ty, pos=pos}]) = {venv=venv,tenv=S.enter(tenv,name,transTy(tenv,ty))}
 			| subTransDec (_) = {venv=venv,tenv=tenv}
