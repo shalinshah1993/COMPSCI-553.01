@@ -12,7 +12,6 @@ Tests that still fail
 38 - recursive, same names
 39 - recursive, same names
 42 - A LOT
-45 - NIL initialization
 
 Tests to Check for further errors in future
 -------------------------------------------
