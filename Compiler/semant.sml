@@ -67,6 +67,9 @@ struct
 		
 	fun checkString ({exp=exp, ty=ty}, pos) =
 		assertSubTypes(ty, T.STRING, pos, pos)
+		
+	fun checkNil ({exp=exp, ty=ty}, pos) =
+		assertSubTypes(ty, T.NIL, pos, pos)
 
 	fun transExp(venv,tenv,exp) = 
 		let
@@ -146,8 +149,8 @@ struct
 			| subTransExp (A.SeqExp exps) = 
 				let
 					fun subTransExps ([]) = {exp=(), ty=T.UNIT}
-					| subTransExps ((exp, pos)::[]) = transExp(venv, tenv, exp)
-					| subTransExps((exp, pos)::l) = (transExp(venv,tenv,exp);subTransExps l);
+					| subTransExps ([(exp,pos)]) = transExp(venv, tenv, exp)
+					| subTransExps((exp, pos)::l) = (transExp(venv,tenv,exp);subTransExps(l));
 				in
 					subTransExps exps
 				end
@@ -209,7 +212,7 @@ struct
 								else
 									((Er.error pos "Type Mismatch between THEN and ELSE expressions");{exp=(), ty=T.ERROR}))
 							else
-								((Er.error pos "TEST expression is not of type INT");{exp=(), ty=T.ERROR})
+								((Er.error pos "TEST expression is not of type");{exp=(), ty=T.ERROR})
 						end))
 			| subTransExp (A.WhileExp {test=test, body=body, pos=pos}) = 
 				let
@@ -239,10 +242,11 @@ struct
 				in
 					(if checkInt(loExpTy, pos) then
 						(if checkInt(hiExpTy, pos) then
-							(if checkUnit(bodyExpTy, pos) then
+							(if (checkUnit(bodyExpTy, pos) orelse checkNil(bodyExpTy, pos)) then
 								{exp=(), ty=T.UNIT}
 							else
-								(Er.error pos "FOR LOOP BODY is not of type UNIT"; { exp=(), ty=T.ERROR}))
+								(
+								(Er.error pos "FOR LOOP BODY is not of type UNIT"; { exp=(), ty=T.ERROR})))
 						else
 							(Er.error pos "FOR LOOP HI expression is not of type INT"; { exp=(), ty=T.ERROR}))
 					else
