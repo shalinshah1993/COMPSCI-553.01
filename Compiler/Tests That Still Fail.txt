@@ -1,0 +1,26 @@
+Tests that still fail
+---------------------
+4 - Recursion issue
+5 - Recursion issue
+6 - Recursion issue
+7 - Recursion issue
+12
+28 - Record Comparison
+29 - Array Comparison
+30 - Variable synonyms
+31 - Type Constraints
+38 - recursive, same names
+39 - recursive, same names
+42 - A LOT
+45 - NIL initialization
+
+Tests to Check for further errors in future
+-------------------------------------------
+16
+17
+18
+19
+21
+47
+48
+* All of these deal with potential mutual recursion issues *

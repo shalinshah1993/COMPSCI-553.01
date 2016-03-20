@@ -12,7 +12,6 @@ struct
 			val ast = P.parse filename
 			val outfile = TextIO.openOut ("printedAST.out")
 		in
-
 			PrintAbsyn.print(outfile, ast);
 			Sem.transProg ast
 		end

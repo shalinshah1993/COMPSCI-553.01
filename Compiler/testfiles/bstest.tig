@@ -1,1 +1,6 @@
-floopy bob 1023uqwu044984@#!#
+let
+	type  rectype = {name:string, age:int}
+	var rec1:rectype := rectype {name="Nobody", age=1000}
+in
+	rec1.age := 2000
+end

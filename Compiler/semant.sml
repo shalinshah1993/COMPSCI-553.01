@@ -30,48 +30,45 @@ struct
 	val loopDepth = ref 0
 	val breakCount = ref 0
 
+	
+	
 	(* Helper Functions *)
 	fun actual_ty (ty: T.ty, pos: A.pos) =
-		case ty of
+		(case ty of
 			T.NAME(sym, tyOpt) => 
 				(case !tyOpt of
 					SOME(t) => (actual_ty (t, pos))
 					| NONE => (Er.error pos ("Cannot evaluate the type: "^(S.name sym)); T.ERROR))
-			| _ => ty
+			| T.ARRAY(t,u) => T.ARRAY(actual_ty(t,pos), u)
+			| _ => ty)
 			
-	fun assertEqualTypes (typeA: T.ty, typeB: T.ty, posA: A.pos, posB: A.pos) =
-		if actual_ty (typeA, posA) = actual_ty (typeB, posB) then
-			true
-		else
-			false
-			
-	fun assertSubTypes (typeA: T.ty, typeB: T.ty, posA: A.pos, posB: A.pos) =
-		let 
-			val actTypeA = actual_ty (typeA, posA)
-			val actTypeB = actual_ty (typeB, posB)
+	fun assertSubTypes (type1: T.ty, type2: T.ty, pos1: A.pos, pos2: A.pos) =
+		let
+			val trueType1 = actual_ty(type1, pos1)
+			val trueType2 = actual_ty(type2, pos2)
 		in
-			if assertEqualTypes (typeA, typeB, posA, posB) then
+			if trueType1 = trueType2 then
 				true
-			else if (actTypeA = T.UNIT orelse actTypeB = T.UNIT) then
-				true
-			else if (actTypeA = T.NIL orelse actTypeB = T.NIL) then
-				(case (actTypeA, actTypeB) of
-					(T.NIL, T.RECORD _) => true
-					| (T.RECORD _, T.NIL) => true
-					| (_,_) => false)
+			else if trueType1 = T.NIL then
+				(case trueType2 of
+					T.RECORD(fields, unique) => true
+					| _ => false)
+			else if trueType2 = T.NIL then
+				(case trueType1 of
+					T.RECORD(fields, unique) => true
+					| _ => false)
 			else
 				false
 		end
 			
-	fun checkType({exp,ty},expectedType,pos) =
-		if ty=expectedType then
-			()
-		else
-			(case expectedType of
-				T.INT => Er.error pos ("Expected expression of type INT")
-				| T.UNIT => Er.error pos ("Expected expression of type UNIT")
-				| T.STRING => Er.error pos ("Expected expression of type STRING")
-				| _ => Er.error pos ("Expected expression of different type"))
+	fun checkInt ({exp=exp, ty=ty},pos) = 
+		assertSubTypes(ty, T.INT, pos, pos)
+		
+	fun checkUnit ({exp=exp, ty=ty}, pos) =
+		assertSubTypes(ty, T.UNIT, pos, pos)
+		
+	fun checkString ({exp=exp, ty=ty}, pos) =
+		assertSubTypes(ty, T.STRING, pos, pos)
 
 	fun transExp(venv,tenv,exp) = 
 		let
@@ -105,9 +102,14 @@ struct
 				)
 			| subTransExp (A.OpExp {left=left, oper=oper, right=right, pos=pos}) = 
 				if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
-					(checkType(transExp(venv,tenv,left),T.UNIT,pos);
-					checkType(transExp(venv,tenv,right),T.UNIT,pos);
-					{exp=(), ty=T.INT})
+					(if (checkInt(transExp(venv,tenv,left),pos)) then
+						(if(checkInt(transExp(venv,tenv,right),pos)) then
+							{exp=(), ty=T.INT}
+						else
+							((Er.error pos ("Right OPERAND is not of type INT"));{exp=(), ty=T.ERROR}))
+					else
+						((Er.error pos ("Left OPERAND is not of type INT"));{exp=(), ty=T.ERROR})
+					)
 				else if (oper=A.EqOp orelse oper=A.NeqOp) then
 					let
 						val {exp=exp, ty=leftType} = transExp(venv,tenv,left)
@@ -141,7 +143,7 @@ struct
 					if (resolveFieldLists(fields, fieldTypes)) then
 						{exp=(), ty=T.RECORD(fieldTypes, ref())}
 					else
-						{exp=(), ty=T.ERROR}
+						(Er.error pos "Could not resolve the record field list";{exp=(), ty=T.ERROR})
 				end
 			| subTransExp (A.SeqExp exps) = 
 				let
@@ -153,13 +155,34 @@ struct
 				end
 			| subTransExp (A.AssignExp {var=var, exp=exp, pos=pos}) = 
 				let
-					val {exp=varExp, ty=varType} = transVar(venv,tenv,var)
-					val {exp=expExp, ty=expType} = transExp(venv,tenv,exp)
+					val {exp=expExp, ty=expTy} = transExp (venv,tenv,exp)
+					val {exp=varExp, ty=varTy} = transVar (venv,tenv,var)
 				in
-					if (assertEqualTypes(varType,expType,pos,pos)) then
+					if (assertSubTypes(expTy, varTy, pos, pos)) then
 						{exp=(), ty=T.UNIT}
 					else
-						(Er.error pos "Type mismatch in assigment expression; types cannot be compared";{exp=(),ty=T.ERROR})
+						(* DEBUG *)
+						((case(actual_ty(expTy, pos)) of
+							T.INT => print "expTy=T.INT\n"
+							| T.STRING => print "expTy=T.STRING\n"
+							| T.NIL => print "expTy=T.NIL\n"
+							| T.UNIT => print "expTy=T.UNIT\n"
+							| T.NAME(s,t) => print "expTy=T.NAME\n"
+							| T.ARRAY(t,u) => print "expTy=T.ARRAY\n"
+							| T.RECORD([(s,t)],u) => print "expTy=T.RECORD\n"
+							| T.ERROR => print "expTy=T.ERROR\n"
+							| _ => print "expTy=???\n");
+							(case(actual_ty(varTy, pos)) of
+							T.INT => print "varTy=T.INT\n"
+							| T.STRING => print "varTy=T.STRING\n"
+							| T.NIL => print "varTy=T.NIL\n"
+							| T.UNIT => print "varTy=T.UNIT\n"
+							| T.NAME(s,t) => print "varTy=T.NAME\n"
+							| T.ARRAY(t,u) => print "varTy=T.ARRAY\n"
+							| T.RECORD([(s,t)],u) => print "varTy=T.RECORD\n"
+							| T.ERROR => print "varTy=T.ERROR\n"
+							| _ => print "varTy=???\n");
+						(Er.error pos ("Cannot assign a value to variable that is not a subtype of the variable type"); {exp=(), ty=T.ERROR}))
 				end
 			| subTransExp (A.IfExp {test=test, then'=thenexp, else'=elsexp, pos=pos}) = 
 				(case elsexp of
@@ -168,9 +191,13 @@ struct
 							val realThenExp = transExp(venv,tenv,thenexp)
 							val testExp = transExp(venv,tenv,test)
 						in
-							checkType(testExp, T.INT, pos);
-							checkType(realThenExp, T.UNIT, pos);
-							{exp=(), ty=T.UNIT}
+							if (checkInt(testExp, pos)) then
+								if (checkUnit(realThenExp, pos)) then
+									{exp=(), ty=T.UNIT}
+								else
+									((Er.error pos "THEN expression is not of type UNIT");{exp=(), ty=T.ERROR})
+							else
+								((Er.error pos "TEST expression is not of type INT");{exp=(), ty=T.ERROR})
 						end)
 					| SOME e => 
 						(let
@@ -178,10 +205,13 @@ struct
 							val realElseExp = transExp(venv,tenv,e)
 							val testExp = transExp(venv,tenv,test)
 						in
-							checkType(testExp, T.INT, pos);
-							checkType(realThenExp, T.UNIT, pos);
-							checkType(realElseExp, T.UNIT, pos);
-							{exp=(), ty=T.UNIT}
+							if (checkInt(testExp, pos)) then
+								(if (assertSubTypes(#ty realThenExp, #ty realElseExp, pos, pos)) then
+									{exp=(), ty=actual_ty(#ty realElseExp, pos)}
+								else
+									((Er.error pos "Type Mismatch between THEN and ELSE expressions");{exp=(), ty=T.ERROR}))
+							else
+								((Er.error pos "TEST expression is not of type INT");{exp=(), ty=T.ERROR})
 						end))
 			| subTransExp (A.WhileExp {test=test, body=body, pos=pos}) = 
 				let
@@ -191,9 +221,13 @@ struct
 					val _ = loopDepth := !loopDepth - 1
 					val _ = breakCount := 0
 				in
-					(checkType(testExpTy, T.INT, pos);
-					checkType(bodyExpTy, T.UNIT, pos);
-					{exp=(), ty=T.UNIT})
+					(if checkInt(testExpTy, pos) then
+						(if checkUnit(bodyExpTy, pos) then
+							{exp=(), ty=T.UNIT}
+						else
+							(Er.error pos "WHILE LOOP BODY is not of type UNIT"; { exp=(), ty=T.ERROR}))
+					else
+						(Er.error pos "WHILE LOOP TEST expression is not of type INT"; { exp=(), ty=T.ERROR}))
 				end
 			| subTransExp (A.ForExp {var=var, escape=escape, lo=lo, hi=hi, body=body, pos=pos}) = 
 				let
@@ -205,10 +239,16 @@ struct
 					val _ = loopDepth := !loopDepth - 1
 					val _ = breakCount := 0
 				in
-					(checkType(loExpTy, T.INT, pos);
-					checkType(hiExpTy, T.INT, pos);
-					checkType(bodyExpTy, T.UNIT, pos);
-					{exp=(), ty=T.UNIT})
+					(if checkInt(loExpTy, pos) then
+						(if checkInt(hiExpTy, pos) then
+							(if checkUnit(bodyExpTy, pos) then
+								{exp=(), ty=T.UNIT}
+							else
+								(Er.error pos "FOR LOOP BODY is not of type UNIT"; { exp=(), ty=T.ERROR}))
+						else
+							(Er.error pos "FOR LOOP HI expression is not of type INT"; { exp=(), ty=T.ERROR}))
+					else
+						(Er.error pos "FOR LOOP LO expression is not of type INT"; { exp=(), ty=T.ERROR}))
 				end
 			| subTransExp (A.BreakExp pos) = 
 				let
@@ -217,7 +257,7 @@ struct
 					if !loopDepth = 0 then
 						(Er.error pos "BREAK can occur only inside a loop"; { exp=(), ty=T.ERROR })
 					else if !breakCount > 1 then
-						(Er.error pos "No more loops to BREAK!"; { exp=(), ty=T.ERROR})
+						(Er.error pos "No more loops to BREAK"; { exp=(), ty=T.ERROR})
 					else
 						{ exp=(), ty=T.UNIT }
 				end
@@ -249,9 +289,13 @@ struct
 									| _ => (Er.error pos ("Cannot define an array as anything other than as an array"); T.ERROR))
 							| NONE => (Er.error pos ("Could not define base type of array"); T.ERROR));
 				in
-					checkType(sizeExpTy, T.INT, pos);
-					assertEqualTypes(#ty initExpTy, baseType, pos,pos);
-					{exp=(), ty=baseType}
+					(if (checkInt(sizeExpTy, pos))  then
+						(if assertSubTypes(#ty initExpTy, baseType, pos,pos) then
+							{exp=(), ty=baseType}
+						else
+							(Er.error pos "Type mismatch between initial expression and base type"; {exp=(), ty=T.ERROR}))
+					else
+						(Er.error pos "SIZE of array must be defined as an INT"; {exp=(), ty=T.ERROR}))
 				end
 		in
 			subTransExp exp
@@ -262,24 +306,32 @@ struct
 			fun subTransVar (A.SimpleVar(simVar,pos)) =
 				(case S.look(venv, simVar) of
 					SOME (E.VarEntry(t)) => {exp=(), ty=actual_ty(t,pos)}
-					| _ => (Er.error pos ("Undefined variable " ^ S.name(simVar)); {exp=(), ty=T.ERROR}))
+					| SOME(_) => (Er.error pos ("Expected VARIABLE, but instead found a FUNCTION"); {exp=(), ty=T.ERROR})
+					| NONE => (Er.error pos ("Undefined variable " ^ S.name(simVar)); {exp=(), ty=T.ERROR}))
 			| subTransVar (A.FieldVar (var, symbol, pos)) = 
 				let
 					val {exp=varExp, ty=varType} = transVar(venv, tenv, var);
 				in
 					(case varType of
-						T.RECORD(fields, unique) => {exp=(), ty=(actual_ty (varType,pos))} 
-						| _ => (Er.error pos ("Field variable must be of type T.RECORD"); {exp=(), ty=T.ERROR}))
+						T.RECORD(fields, unique) =>
+						(case List.find (fn recTups => (#1 recTups) = symbol) fields of
+							NONE => 
+								(Er.error pos "Could not find the correct FIELD VAR";{exp=(), ty=T.ERROR})
+							| SOME(recTup) => {exp=(), ty=actual_ty(#2 recTup, pos)})
+						| _ =>
+							(Er.error pos ("Field variable must be of type T.RECORD"); {exp=(), ty=T.ERROR}))
 				end
 			| subTransVar (A.SubscriptVar (var, exp, pos)) = 
 				(let
 					val {exp=varExp, ty=varType} = transVar(venv,tenv,var);
 					val expExpTy = transExp(venv,tenv,exp)
 				in
-					checkType(expExpTy, T.INT, pos);
-					(case varType of
-						T.ARRAY (baseType, unique) => {exp=(), ty = (actual_ty (baseType, pos))}
-						| _ => (Er.error pos ("Variable must be of type T.ARRAY"); {exp=(), ty=T.ERROR}))
+					if (checkInt(expExpTy, pos)) then
+						(case varType of
+							T.ARRAY (baseType, unique) => {exp=(), ty = (actual_ty (baseType, pos))}
+							| _ => (Er.error pos ("Variable must be of type T.ARRAY"); {exp=(), ty=T.ERROR}))
+					else
+						(Er.error pos ("ARRAY subscript must be of type INT");{exp=(), ty=T.ERROR})
 				end)
 		in
 			subTransVar var
@@ -305,7 +357,8 @@ struct
 						in
 							S.enter(newVenv, name, E.FunEntry {formals = params', result = getReturnType(result)})
 						end
-					fun processBody(venv, {name=name, params=params,result=result, body=body, pos=pos}::func) = 
+					fun processBody(venv, []) = ()
+					| processBody(venv, {name=name, params=params,result=result, body=body, pos=pos}::func) = 
 						let
 							fun enterparam({name,escape,typ,pos}, newVenv) =
 								let
@@ -320,7 +373,7 @@ struct
 							val {exp=bodyExp, ty=bodyTy} = transExp(venv', tenv, body)
 						in
 							(if assertSubTypes(bodyTy, getReturnType(result), pos, pos) then
-								(if (assertEqualTypes(getReturnType(result), T.UNIT, pos, pos) andalso assertEqualTypes(bodyTy, T.UNIT, pos, pos) <> true) then
+								(if (assertSubTypes(getReturnType(result), T.UNIT, pos, pos) andalso assertSubTypes(bodyTy, T.UNIT, pos, pos) <> true) then
 									(Er.error pos ("Function body should be of type T.UNIT"))
 								else
 									())
@@ -359,7 +412,7 @@ struct
 							fun extractFieldInfo({name, escape, typ, pos}) =
 								(case S.look(tenv, typ) of
 									SOME (t) => (name, t)
-									| NONE => (Er.error pos("Undefined type"^S.name(name)); (name, T.ERROR)))
+									| NONE => (Er.error pos("Undefined type "^S.name(name)); (name, T.ERROR)))
 						in
 							map extractFieldInfo field
 						end
@@ -369,7 +422,7 @@ struct
 			| subTransTy (A.ArrayTy (sym,pos)) =
 				(case S.look(tenv,sym) of
 					SOME (t) => T.ARRAY(t, ref())
-					| NONE => (Er.error pos("Undefined type "^S.name(sym)); T.ERROR))
+					| NONE => (Er.error pos("Undefined type "^S.name(sym)^";Expecting type T.ARRAY"); T.ERROR))
 		in
 			subTransTy ty
 		end
