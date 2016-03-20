@@ -94,13 +94,42 @@ struct
 						in
 							if length(transArgs) <> length(formals) then
 		  						(Er.error pos "Incorrect number of arguments in fuction "; {exp=(),ty=actual_ty(result, pos)})
+		  					else 
+		  					(
+		  						(
+		  							if checkArgsType (formals, map (#ty) transArgs, pos)  then 
+		  								()
+			  						else 
+			  							(Er.error pos "Function has incorrect parameters")
+		  						);
+		  						{exp=(),ty=actual_ty(result, pos)}
+		  					)
+						end
+					|  _ => (Er.error pos "No such function exists"; {exp=(),ty=T.ERROR})
+				)
+				(*(
+				case S.look(venv, func) of 
+					SOME (E.FunEntry {formals=formals, result=result}) => 
+						let
+							val transArgs = map subTransExp args
+							fun checkArgsType ([], [], pos) = true
+			  				| checkArgsType (_, [], pos) = false
+			  				| checkArgsType ([], _, pos) = false
+			  				| checkArgsType (arg1ty::arglst1, arg2ty::arglst2, pos) =
+								if assertSubTypes(arg1ty,arg2ty, pos, pos) then
+									checkArgsType(arglst1,arglst2, pos)
+								else 
+									false
+						in
+							if length(transArgs) <> length(formals) then
+		  						(Er.error pos "Incorrect number of arguments in fuction "; {exp=(),ty=actual_ty(result, pos)})
 		  					else if checkArgsType (formals, map (#ty) transArgs, pos)  then 
 		  						{exp=(),ty=T.UNIT}
 		  					else 
 		  						(Er.error pos "Function has incorrect parameters"; {exp=(),ty=actual_ty(result, pos)})
 						end
 					|  _ => (Er.error pos "No such function exists"; {exp=(),ty=T.ERROR})
-				)
+				)*)
 			| subTransExp (A.OpExp {left=left, oper=oper, right=right, pos=pos}) = 
 				if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
 					(if (checkInt(transExp(venv,tenv,left),pos)) then

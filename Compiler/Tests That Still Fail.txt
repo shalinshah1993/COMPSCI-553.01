@@ -1,6 +1,5 @@
 Tests that still fail
 ---------------------
-4 - Recursion issue
 5 - Recursion issue
 6 - Recursion issue
 7 - Recursion issue
