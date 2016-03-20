@@ -21,7 +21,6 @@ let
                         "test17.tig",
                         "test18.tig",
                         "test19.tig",
-                        "test2.tig",
                         "test20.tig",
                         "test21.tig",
                         "test22.tig",
@@ -31,7 +30,27 @@ let
                         "test26.tig",
                         "test27.tig",
                         "test28.tig",
-                        "test29.tig"]
+                        "test29.tig",
+						"test30.tig",
+						"test31.tig",
+						"test32.tig",
+						"test33.tig",
+						"test34.tig",
+						"test35.tig",
+						"test36.tig",
+						"test37.tig",
+						"test38.tig",
+						"test39.tig",
+						"test40.tig",
+						"test41.tig",
+						"test42.tig",
+						"test43.tig",
+						"test44.tig",
+						"test45.tig",
+						"test46.tig",
+						"test47.tig",
+						"test48.tig",
+						"test49.tig"]
     val testFiles = map (fn x=>testFilesFolder^x) testFileList
 in
     map (fn x=>Main.runFile x) testFiles

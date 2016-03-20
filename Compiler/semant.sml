@@ -391,7 +391,20 @@ struct
 				let 
 					val {exp=varExp, ty=varTy} = transExp(venv,tenv,init)
 				in
-					{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv}
+					((case varTy of
+						T.NIL =>
+							( case typ of
+								NONE => ((Er.error pos "No initial type to assign VALUE to ");{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})
+								| SOME ((t,p)) => 
+									(case S.look(tenv,t) of
+										SOME(tyyy) =>
+											(case (actual_ty(tyyy,p)) of
+												T.RECORD(_,_) => ({venv=S.enter(venv,name,E.VarEntry(actual_ty(tyyy,p))),tenv=tenv})
+												| _ => ((Er.error pos "NIL type of assigned value not constrained by RECORD type ");{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv}))
+										| NONE => ((Er.error pos "NIL type of assigned value cannot be constrained by undefined variable type");{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})
+											))
+						| _ =>
+							({venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})))
 				end
 			| subTransDec (A.TypeDec [{name=name, ty=ty, pos=pos}]) = {venv=venv,tenv=S.enter(tenv,name,transTy(tenv,ty))}
 			| subTransDec (_) = {venv=venv,tenv=tenv}
