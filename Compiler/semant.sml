@@ -211,28 +211,7 @@ struct
 					if (assertSubTypes(expTy, varTy, pos, pos)) then
 						{exp=(), ty=T.UNIT}
 					else
-						(* DEBUG *)
-						((case(actual_ty(expTy, pos)) of
-							T.INT => print "expTy=T.INT\n"
-							| T.STRING => print "expTy=T.STRING\n"
-							| T.NIL => print "expTy=T.NIL\n"
-							| T.UNIT => print "expTy=T.UNIT\n"
-							| T.NAME(s,t) => print "expTy=T.NAME\n"
-							| T.ARRAY(t,u) => print "expTy=T.ARRAY\n"
-							| T.RECORD([(s,t)],u) => print "expTy=T.RECORD\n"
-							| T.ERROR => print "expTy=T.ERROR\n"
-							| _ => print "expTy=???\n");
-							(case(actual_ty(varTy, pos)) of
-							T.INT => print "varTy=T.INT\n"
-							| T.STRING => print "varTy=T.STRING\n"
-							| T.NIL => print "varTy=T.NIL\n"
-							| T.UNIT => print "varTy=T.UNIT\n"
-							| T.NAME(s,t) => print "varTy=T.NAME\n"
-							| T.ARRAY(t,u) => print "varTy=T.ARRAY\n"
-							| T.RECORD([(s,t)],u) => print "varTy=T.RECORD\n"
-							| T.ERROR => print "varTy=T.ERROR\n"
-							| _ => print "varTy=???\n");
-						(Er.error pos ("Cannot assign a value to variable that is not a subtype of the variable type"); {exp=(), ty=T.ERROR}))
+						((Er.error pos ("Cannot assign a value to variable that is not a subtype of the variable type"); {exp=(), ty=T.ERROR}))
 				end
 			| subTransExp (A.IfExp {test=test, then'=thenexp, else'=elsexp, pos=pos}) = 
 				(case elsexp of
