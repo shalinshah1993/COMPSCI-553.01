@@ -1,9 +1,7 @@
 Tests that still fail
 ---------------------
-6 - Recursion issue
-7 - Recursion issue
-38 - recursive, same names
-39 - recursive, same names
+38 - same names
+39 - same names
 
 Tests to Check for further errors in future
 -------------------------------------------

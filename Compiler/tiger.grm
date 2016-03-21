@@ -33,7 +33,7 @@ open Symbol
 		| tyFields of {name: symbol, escape: bool ref, typ: symbol, pos: pos} list 		
 		| varDec of A.dec 				
 		| funcDec of A.fundec 			
-		| funcDecList of A.dec			
+		| funcDecList of A.fundec list			
 		| createArray of A.exp			
 		| createRecord of A.exp 		
 		| recordList of (A.symbol * A.exp * int) list 			
@@ -152,7 +152,7 @@ decs :
 dec :
 		typeDecList						(A.TypeDec typeDecList)
 	|	varDec 							(varDec)
-	|	funcDec							(A.FunctionDec [(funcDec)])
+	|	funcDecList						(A.FunctionDec funcDecList)
 
 typeDecList : 
 			typeDec 					([typeDec])
@@ -180,9 +180,9 @@ varDec :
 	|	VAR ID COLON ID ASSIGN exp      (A.VarDec {name=symbol ID1, escape= ref true, typ=SOME (symbol ID2, ID2left), init=exp, pos=VARleft})
 
 (* CFG for declaring a function *)
-(* funcDecList : 
+funcDecList : 
 				funcDec                              ([funcDec])
-			|	funcDecList funcDec                  (funcDecList @ [funcDec]) *)
+			|	funcDecList funcDec                  (funcDecList @ [funcDec])
 
 funcDec : 
 		FUNCTION ID LPAREN tyFields RPAREN EQ exp       	({name=symbol ID, params=tyFields, result=NONE, body=exp, pos=FUNCTIONleft})
