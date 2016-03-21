@@ -27,7 +27,7 @@ open Symbol
 		| decs of A.dec list			
 		| dec of A.dec 					
 		| typeDec of {name: Symbol.symbol, ty: A.ty, pos: pos}	
-		| typeDecList of A.dec list		
+		| typeDecList of {name: Symbol.symbol, ty: A.ty, pos: pos}	 list		
 		| ty of A.ty 					
 		| tyField of {name: symbol, escape: bool ref, typ: symbol, pos: pos} 			
 		| tyFields of {name: symbol, escape: bool ref, typ: symbol, pos: pos} list 		
@@ -150,13 +150,13 @@ decs :
 	|	decs dec 						(decs @ [dec])
 
 dec :
-		typeDec							(A.TypeDec [(typeDec)])
+		typeDecList						(A.TypeDec typeDecList)
 	|	varDec 							(varDec)
 	|	funcDec							(A.FunctionDec [(funcDec)])
 
-(* typeDecList : 
+typeDecList : 
 			typeDec 					([typeDec])
-		|	typeDecList typeDec 		(typeDecList @ [typeDec]) *)
+		|	typeDecList typeDec 		(typeDecList @ [typeDec])
 typeDec :  
 		TYPE ID EQ ty 					({name=symbol ID, ty=ty, pos=TYPEleft})
 

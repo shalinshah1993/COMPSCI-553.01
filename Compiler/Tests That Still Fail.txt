@@ -1,6 +1,5 @@
 Tests that still fail
 ---------------------
-5 - Recursion issue
 6 - Recursion issue
 7 - Recursion issue
 38 - recursive, same names
