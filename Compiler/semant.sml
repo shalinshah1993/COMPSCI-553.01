@@ -70,7 +70,7 @@ struct
 
 	fun typeNoRepeatName(typeDecList) = 
 		let
-			fun addDec({name=name, ty=typ, pos=pos}, curSet)= (print "Adding element "; MySet.add(curSet, (S.name name)));
+			fun addDec({name=name, ty=typ, pos=pos}, curSet)= MySet.add(curSet, (S.name name));
 		in
 			if MySet.numItems(foldr addDec MySet.empty typeDecList) = List.length(typeDecList) then 
 				true
