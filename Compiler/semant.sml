@@ -60,17 +60,17 @@ struct
 		end
 			
 	(* Helper Methods for checking recursive types *)
-	structure MySet =  ListSetFn 
+	structure MySet =  BinarySetFn 
 	(
 		struct 
-			type ord_key = A.symbol
-	  		val compare = (fn (_,_) => General.LESS) 
+			type ord_key = string
+	  		val compare = String.compare
   		end
   	)
 
 	fun typeNoRepeatName(typeDecList) = 
 		let
-			fun addDec({name=name, ty=typ, pos=pos}, curSet)= MySet.add(curSet, name)
+			fun addDec({name=name, ty=typ, pos=pos}, curSet)= (print "Adding element "; MySet.add(curSet, (S.name name)));
 		in
 			if MySet.numItems(foldr addDec MySet.empty typeDecList) = List.length(typeDecList) then 
 				true
@@ -80,10 +80,10 @@ struct
 
 	fun funNoRepeatName(funDecList) = 
 		let
-			fun addDec({name=name, params=params, result=result, body=body, pos=pos}, curSet) = MySet.add(curSet, name)
+			fun addDec({name=name, params=params, result=result, body=body, pos=pos}, curSet) = MySet.add(curSet, (S.name name))
 		in
-			if MySet.numItems(foldr addDec MySet.empty funDecList) = List.length(funDecList)
-			then true
+			if MySet.numItems(foldr addDec MySet.empty funDecList) = List.length(funDecList) then 
+				true
 			else (ErrorMsg.error 0 "Functions with similar names exists in mutual recursion."; false)
 		end
 
