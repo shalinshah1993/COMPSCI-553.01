@@ -59,6 +59,40 @@ struct
 				false
 		end
 			
+	(* Helper Methods for checking recursive types *)
+	structure MySet =  ListSetFn 
+	(
+		struct 
+			type ord_key = A.symbol
+	  		val compare = (fn (_,_) => General.LESS) 
+  		end
+  	)
+
+	fun noRepeatName(decList) = 
+		let
+			fun enterOneDec({name=name, ty=typ, pos=pos}, setSoFar)= MySet.add(setSoFar, name)
+		in
+			if MySet.numItems(foldr enterOneDec MySet.empty decList) = List.length(decList) then 
+				true
+			else 
+				(ErrorMsg.error 0 "Type with similar names exists in mutual recursion.";false)
+		end
+
+	fun hasDefinedType(originalName: A.symbol, ty: T.ty, pos: A.pos, firstTime: int) = 
+	(
+		case ty of
+			T.NAME(sym, tyOpt) => 
+				if (originalName=sym andalso firstTime=0) then 
+					(ErrorMsg.error pos ("Cyclic type declaration detected: "^(S.name sym)); false)
+				else 
+				(
+					case !tyOpt of
+						SOME(t) => (hasDefinedType (originalName,t,pos,0))
+					   | NONE => (ErrorMsg.error pos ("Undefined type with name: "^(S.name sym)); false)
+				)
+			| _ => true
+	)
+
 	fun checkInt ({exp=exp, ty=ty},pos) = 
 		assertSubTypes(ty, T.INT, pos, pos)
 		
@@ -426,8 +460,46 @@ struct
 										| NONE =>
 											((Er.error pos "Type of variable is undefined");{venv=S.enter(venv,name,E.VarEntry(varTy)),tenv=tenv})))))
 				end
-			| subTransDec (A.TypeDec [{name=name, ty=ty, pos=pos}]) = {venv=venv,tenv=S.enter(tenv,name,transTy(tenv,ty))}
-			| subTransDec (_) = {venv=venv,tenv=tenv}
+			| subTransDec (A.TypeDec decs) = 
+				let
+					fun processTypes(tenv, types) =
+						let
+							fun addEmptyType ({name=name, ty=ty, pos=pos}, tenv) =
+								S.enter(tenv, name, T.NAME(name, ref NONE))
+
+							val tenv' = foldr addEmptyType tenv types
+
+							fun findRealType ({name=name, ty=ty, pos=pos}, tenv') = 
+								let
+									val realType = transTy(tenv', ty)
+								in
+									(* Update NONE type to actual type if exists *)
+									case S.look(tenv', name) of 
+										SOME(T.NAME(sym, tyOpt)) => (let val temp = (tyOpt := SOME(realType)) in tenv' end)
+										| _ => (ErrorMsg.error pos "Problem with mutual type recursion."; tenv')
+								end
+
+							val tenv'' = foldr findRealType tenv' types
+
+							fun detectTypeCycle([]) = true
+							| detectTypeCycle({name=name, ty=ty, pos=pos}::dec) =
+									case S.look(tenv'', name) of
+										SOME(t) => if hasDefinedType(name, t, pos, 1) then detectTypeCycle(dec) else false
+										| NONE =>  (ErrorMsg.error pos "Unable to find defined type"; false)
+						in
+							if detectTypeCycle(types) then 
+								(
+									if noRepeatName(types) then 
+										{venv = venv, tenv = tenv''}
+									else 
+										{venv = venv, tenv = tenv}
+								) 
+							else 
+								{venv = venv, tenv = tenv}
+						end			
+				in
+					processTypes(tenv, decs)
+				end
 		in
 			subTransDec dec
 		end
