@@ -68,14 +68,23 @@ struct
   		end
   	)
 
-	fun noRepeatName(decList) = 
+	fun typeNoRepeatName(typeDecList) = 
 		let
-			fun enterOneDec({name=name, ty=typ, pos=pos}, setSoFar)= MySet.add(setSoFar, name)
+			fun addDec({name=name, ty=typ, pos=pos}, curSet)= MySet.add(curSet, name)
 		in
-			if MySet.numItems(foldr enterOneDec MySet.empty decList) = List.length(decList) then 
+			if MySet.numItems(foldr addDec MySet.empty typeDecList) = List.length(typeDecList) then 
 				true
 			else 
-				(ErrorMsg.error 0 "Type with similar names exists in mutual recursion.";false)
+				(ErrorMsg.error 0 "Type with similar names exists in mutual recursion."; false)
+		end
+
+	fun funNoRepeatName(funDecList) = 
+		let
+			fun addDec({name=name, params=params, result=result, body=body, pos=pos}, curSet) = MySet.add(curSet, name)
+		in
+			if MySet.numItems(foldr addDec MySet.empty funDecList) = List.length(funDecList)
+			then true
+			else (ErrorMsg.error 0 "Functions with similar names exists in mutual recursion."; false)
 		end
 
 	fun hasDefinedType(originalName: A.symbol, ty: T.ty, pos: A.pos, firstTime: int) = 
@@ -414,19 +423,23 @@ struct
 							val venv' = foldr enterparam venv params
 							val {exp=bodyExp, ty=bodyTy} = transExp(venv', tenv, body)
 						in
-							(if assertSubTypes(bodyTy, getReturnType(result), pos, pos) then
-								(if (assertSubTypes(getReturnType(result), T.UNIT, pos, pos) andalso assertSubTypes(bodyTy, T.UNIT, pos, pos) <> true) then
-									(Er.error pos ("Function body should be of type T.UNIT"))
+							(
+								if assertSubTypes(bodyTy, getReturnType(result), pos, pos) then
+								(
+									if (assertSubTypes(getReturnType(result), T.UNIT, pos, pos) andalso assertSubTypes(bodyTy, T.UNIT, pos, pos) <> true) then
+										(Er.error pos ("Function body should be of type T.UNIT"))
+									else
+										()
+								)
 								else
-									())
-								
-							else
-								Er.error pos ("Function body and return do not have same types");
-							processBody(venv, func))
+									Er.error pos ("Function body and return do not have same types");
+								processBody(venv, func)
+							)
 						end
 					val venv' = foldr processHeader venv funcs;
 				in
 					(processBody(venv', funcs);
+					funNoRepeatName(funcs);
 					{venv = venv', tenv=tenv})
 				end)
 			| subTransDec (A.VarDec {name=name, escape=escape, typ=typ, init=init, pos=pos}) = 
@@ -489,7 +502,7 @@ struct
 						in
 							if detectTypeCycle(types) then 
 								(
-									if noRepeatName(types) then 
+									if typeNoRepeatName(types) then 
 										{venv = venv, tenv = tenv''}
 									else 
 										{venv = venv, tenv = tenv}
