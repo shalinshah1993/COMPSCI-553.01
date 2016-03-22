@@ -60,7 +60,7 @@ struct
 		end
 			
 	(* Helper Methods for checking recursive types *)
-	structure MySet =  BinarySetFn 
+	structure tempDecSet =  BinarySetFn 
 	(
 		struct 
 			type ord_key = string
@@ -70,21 +70,22 @@ struct
 
 	fun typeNoRepeatName(typeDecList) = 
 		let
-			fun addDec({name=name, ty=typ, pos=pos}, curSet)= MySet.add(curSet, (S.name name));
+			fun addDec({name=name, ty=typ, pos=pos}, curSet)= tempDecSet.add(curSet, (S.name name));
 		in
-			if MySet.numItems(foldr addDec MySet.empty typeDecList) = List.length(typeDecList) then 
+			if tempDecSet.numItems(foldr addDec tempDecSet.empty typeDecList) = List.length(typeDecList) then 
 				true
 			else 
-				(ErrorMsg.error 0 "Type with similar names exists in mutual recursion."; false)
+				false
 		end
 
 	fun funNoRepeatName(funDecList) = 
 		let
-			fun addDec({name=name, params=params, result=result, body=body, pos=pos}, curSet) = MySet.add(curSet, (S.name name))
+			fun addDec({name=name, params=params, result=result, body=body, pos=pos}, curSet) = tempDecSet.add(curSet, (S.name name))
 		in
-			if MySet.numItems(foldr addDec MySet.empty funDecList) = List.length(funDecList) then 
+			if tempDecSet.numItems(foldr addDec tempDecSet.empty funDecList) = List.length(funDecList) then 
 				true
-			else (ErrorMsg.error 0 "Functions with similar names exists in mutual recursion."; false)
+			else 
+				false
 		end
 
 	fun hasDefinedType(originalName: A.symbol, ty: T.ty, pos: A.pos, firstTime: int) = 
@@ -97,7 +98,7 @@ struct
 				(
 					case !tyOpt of
 						SOME(t) => (hasDefinedType (originalName,t,pos,0))
-					   | NONE => (ErrorMsg.error pos ("Undefined type with name: "^(S.name sym)); false)
+					   | NONE => (ErrorMsg.error pos ("Cannot define the type: "^(S.name sym)); false)
 				)
 			| _ => true
 	)
@@ -418,8 +419,10 @@ struct
 					val venv' = foldr processHeader venv funcs;
 				in
 					(processBody(venv', funcs);
-					funNoRepeatName(funcs);
-					{venv = venv', tenv=tenv})
+					if funNoRepeatName(funcs) then
+						{venv = venv', tenv=tenv}
+					else
+						(Er.error 0 ("Functions with same name exist in mutually recursive environment");{venv = venv, tenv=tenv}))
 				end)
 			| subTransDec (A.VarDec {name=name, escape=escape, typ=typ, init=init, pos=pos}) = 
 				let 
@@ -484,7 +487,9 @@ struct
 									if typeNoRepeatName(types) then 
 										{venv = venv, tenv = tenv''}
 									else 
-										{venv = venv, tenv = tenv}
+										(
+										(Er.error 0 "Types with same name exist in mutually recursive enviornment");
+										{venv = venv, tenv = tenv})
 								) 
 							else 
 								{venv = venv, tenv = tenv}
