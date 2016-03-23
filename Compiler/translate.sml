@@ -6,6 +6,7 @@ sig
 	
 	(*structure Frame : FRAME -- In book, but idk why? *)
 	
+	(* Functions Described in the book *)
 	val fraglist = Frame.frag list ref
 	val outermost : level
 	val newLevel : {parent: level, name: Temp.label, formals: bool list} -> level
@@ -17,7 +18,30 @@ sig
 	val seq : T.stm list -> T.stm
 	
 	(* Expression functions that do the meat of translation *)
+	val intExp : int -> exp
+	val stringExp : string -> exp
+	val nilExp : unit -> exp
 	val intArithExp : (Absyn.oper * exp * exp) -> exp
+	val assignExp : (exp * exp) -> exp
+	val seqExp : (exp list) -> exp
+	val letExp : (exp list * exp) -> exp
+	(*
+		For exp
+		If Then exp
+		If Then Else Exp
+		While Exp
+		Call Exp
+		RecordExp
+		Array Exp
+		StringComparison Exp
+	*)
+	
+	(* Var Expressions *)
+	(*
+		SimpleVar
+		FieldVar
+		SubscriptVar
+	*)
 	
 	val unEx : exp -> Tree.exp
 	val unNx : exp -> Tree.stm
@@ -77,6 +101,8 @@ struct
 	
 	fun intExp(n) = Ex(T.CONST n)
 	
+	fun nilExp = Ex (T.CONST 0)
+	
 	fun intArithExp (A.PlusOp, left, right) = Ex(T.BINOP(T.PLUS, unEx(left), unEx(right)))
 		| intArithExp (A.MinusOp, left, right) = Ex(T.BINOP(T.MINUS, unEx(left), unEx(right)))
 		| intArithExp (A.TimesOp, left, right) = Ex(T.BINOP(T.MUL, unEx(left), unEx(right)))
@@ -87,5 +113,24 @@ struct
 		| intArithExp (A.GeOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.GE, unEx(left), unEx(right), t, f))
 		| intArithExp (A.EqOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.EQ, unEx(left), unEx(right), t, f))
 		| intArithExp (A.NeqOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.NE, unEx(left), unEx(right), t, f))
+		
+	fun assignExp (v, e) =
+		let
+			vEx = unEx v
+			eEx = unEx e
+		in
+			Nx(T.MOVE(vEx, eEx)) (*MOVE stores right in left, don't want result*)
+		end
+		
+	fun seqExp [] = nilExp
+		| seqExp [e] = Ex (e)
+		| seqExp (e::es) =
+			Ex (T.ESEQ(unNx e, unEx(seqExp es)))
+			
+	fun letExp ([], body) = Ex (body)
+		| letExp (decs, body) = Ex (T.ESEQ( T.SEQ(map unNx decs), unEx body))
 	
+	fun breakExp b = Nx (T.JUMP(T.NAME(b), [b]))
+	
+	fun getResult = !fraglist
 end
