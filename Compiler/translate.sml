@@ -6,6 +6,7 @@ sig
 	
 	(*structure Frame : FRAME -- In book, but idk why? *)
 	
+	val fraglist = Frame.frag list ref
 	val outermost : level
 	val newLevel : {parent: level, name: Temp.label, formals: bool list} -> level
 	val formals : level -> access list
@@ -30,6 +31,8 @@ struct
 	structure A = Absyn
 	
 	type access = level * F.access
+	
+	val fraglist = ref [] : Frame.frag list ref
 	
 	datatype exp = Ex of T.exp
 					| Nx of T.stm
@@ -64,15 +67,25 @@ struct
 		| unNx (Ex e) = T.EXP(e)
 		| unNx (Cx genstm) = T.EXP(unEx(Cx genstm)) (*Need to return EXP, UnEx from book already takes Cx and returns a statement*)
 	
-	fun intArithExp (A.PlusOp, left, right) = ()
-		| intArithExp (A.MinusOp, left, right) = ()
-		| intArithExp (A.TimesOp, left, right) = ()
-		| intArithExp (A.DivideOp, left, right) = ()
-		| intArithExp (A.LtOp, left, right) = ()
-		| intArithExp (A.LeOp, left, right) = ()
-		| intArithExp (A.GtOp, left, right) = ()
-		| intArithExp (A.GeOp, left, right) = ()
-		| intArithExp (A.EqOp, left, right) = ()
-		| intArithExp (A.NeqOp, left, right) = ()
+	fun stringExp(lit) =
+		let
+			val label = Te.newlabel()
+		in
+			fraglist := F.STRING(label, lit)::!fraglist;
+			Ex (T.NAME label)
+		end
+	
+	fun intExp(n) = Ex(T.CONST n)
+	
+	fun intArithExp (A.PlusOp, left, right) = Ex(T.BINOP(T.PLUS, unEx(left), unEx(right)))
+		| intArithExp (A.MinusOp, left, right) = Ex(T.BINOP(T.MINUS, unEx(left), unEx(right)))
+		| intArithExp (A.TimesOp, left, right) = Ex(T.BINOP(T.MUL, unEx(left), unEx(right)))
+		| intArithExp (A.DivideOp, left, right) = Ex(T.BINOP(T.DIV, unEx(left), unEx(right)))
+		| intArithExp (A.LtOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.LT, unEx(left), unEx(right), t, f))
+		| intArithExp (A.LeOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.LE, unEx(left), unEx(right), t, f))
+		| intArithExp (A.GtOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.GT, unEx(left), unEx(right), t, f))
+		| intArithExp (A.GeOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.GE, unEx(left), unEx(right), t, f))
+		| intArithExp (A.EqOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.EQ, unEx(left), unEx(right), t, f))
+		| intArithExp (A.NeqOp, left, right) = Cx(fn(t,f) => T.CJUMP(T.NE, unEx(left), unEx(right), t, f))
 	
 end
