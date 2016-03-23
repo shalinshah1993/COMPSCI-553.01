@@ -16,6 +16,11 @@ env.sml
 semant.sml
 translate.sml
 
+test.sml
+frame.sml
+temp.sig
+temp.sml
+
 main.sml
 
 $/basis.cm
