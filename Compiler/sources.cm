@@ -16,7 +16,9 @@ env.sml
 semant.sml
 translate.sml
 
-test.sml
+tree.sml
+
+frame.sig
 frame.sml
 temp.sig
 temp.sml

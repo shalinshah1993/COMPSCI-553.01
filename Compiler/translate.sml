@@ -4,10 +4,10 @@ sig
 	type access (*not the same as Frame.access*)
 	type exp
 	
-	(*structure Frame : FRAME -- In book, but idk why? *)
+	structure Frame : FRAME
 	
 	(* Functions Described in the book *)
-	val fraglist = Frame.frag list ref
+	val fraglist : Frame.frag list ref
 	val outermost : level
 	val newLevel : {parent: level, name: Temp.label, formals: bool list} -> level
 	val formals : level -> access list
@@ -15,7 +15,7 @@ sig
 	val procEntryExit : {level : level, body : exp} -> unit
 	val getResult : unit -> Frame.frag list
 	
-	val seq : T.stm list -> T.stm
+	val seq : Tree.stm list -> Tree.stm
 	
 	(* Expression functions that do the meat of translation *)
 	val intExp : int -> exp
@@ -50,14 +50,14 @@ sig
 end
 structure Translate : TRANSLATE =
 struct
-	structure F = Frame
+	structure F = MIPSFrame
 	structure T = Tree
 	structure Te = Temp
 	structure A = Absyn
 	
 	type access = level * F.access
 	
-	val fraglist = ref [] : Frame.frag list ref
+	val fraglist = ref [] : F.frag list ref
 	
 	datatype exp = Ex of T.exp
 					| Nx of T.stm
@@ -71,7 +71,7 @@ struct
 				val r = Te.newtemp()
 				val t = Te.newlabel() and f = Te.newlabel()
 			in
-				T.ESEQ(seq[T.MOVE(T.Temp r, T.CONST 1),
+				T.ESEQ(seq[T.MOVE(T.TEMP r, T.CONST 1),
 							genstm(t,f),
 							T.LABEL f,
 							T.MOVE(T.TEMP r, T.CONST 0),
@@ -117,8 +117,8 @@ struct
 		
 	fun assignExp (v, e) =
 		let
-			vEx = unEx v
-			eEx = unEx e
+			val vEx = unEx v
+			val eEx = unEx e
 		in
 			Nx(T.MOVE(vEx, eEx)) (*MOVE stores right in left, don't want result*)
 		end
@@ -135,10 +135,10 @@ struct
 	
 	fun ifExp (e1, e2) =
 		let
-			e1Exp = unCx(e1)
-			thenLabel = Te.newlabel()
-			doneLabel = Te.newlabel()
-			rTemp = Te.newtemp()
+			val e1Exp = unCx(e1)
+			val thenLabel = Te.newlabel()
+			val doneLabel = Te.newlabel()
+			val rTemp = Te.newtemp()
 
 		in
 			case (e2) of
@@ -163,11 +163,11 @@ struct
 		
 	fun ifElseExp (e1, e2, e3) =
 		let
-			e1Exp = unCx(e1)
-			thenLabel = Te.newlabel()
-			elseLabel = Te.newlabel()
-			doneLabel = Te.newlabel()
-			rTemp = Te.newtemp()
+			val e1Exp = unCx(e1)
+			val thenLabel = Te.newlabel()
+			val elseLabel = Te.newlabel()
+			val doneLabel = Te.newlabel()
+			val rTemp = Te.newtemp()
 		in
 			case (e2, e3) of (* Remember, both e2 and e3 are of same types -> Will throw warnings, but how to print errors without pos?*)
 				(Cx e2C, Cs e3C) =>
