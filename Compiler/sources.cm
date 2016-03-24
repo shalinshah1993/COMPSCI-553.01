@@ -18,7 +18,6 @@ translate.sml
 
 tree.sml
 
-frame.sig
 frame.sml
 temp.sig
 temp.sml
