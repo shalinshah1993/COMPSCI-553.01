@@ -25,15 +25,16 @@ sig
 	val assignExp : (exp * exp) -> exp
 	val seqExp : (exp list) -> exp
 	val letExp : (exp list * exp) -> exp
+	val ifExp : (exp * exp) -> exp
+	val ifElseExp : (exp * exp * exp) -> exp
 	(*
 		For exp
-		If Then exp
-		If Then Else Exp
 		While Exp
+		StringComparison Exp
+		
 		Call Exp
 		RecordExp
 		Array Exp
-		StringComparison Exp
 	*)
 	
 	(* Var Expressions *)
@@ -131,6 +132,70 @@ struct
 		| letExp (decs, body) = Ex (T.ESEQ( T.SEQ(map unNx decs), unEx body))
 	
 	fun breakExp b = Nx (T.JUMP(T.NAME(b), [b]))
+	
+	fun ifExp (e1, e2) =
+		let
+			e1Exp = unCx(e1)
+			thenLabel = Te.newlabel()
+			doneLabel = Te.newlabel()
+			rTemp = Te.newtemp()
+
+		in
+			case (e2) of
+				(Cx genstm) =>
+					Cx (fn (t,f) =>
+						T.SEQ[(e1Exp) (thenLabel, doneLabel),
+								T.LABEL thenLabel,
+								(unCx genstm) (t,f),
+								T.LABEL doneLabel])
+				| (Nx s) =>
+					Nx (T.SEQ[(e1Exp) (thenLabel,doneLabel),
+								T.LABEL thenLabel,
+								UnNx s,
+								T.LABEL doneLabel])
+				| (Ex e) =>
+					Ex (T.ESEQ(T.SEQ[(e1Exp) (thenLabel,doneLabel),
+									T.LABEL thenLabel,
+									T.MOVE(T.TEMP rTemp, e),
+									T.LABEL doneLabel],
+								T.TEMP rTemp))
+		end
+		
+	fun ifElseExp (e1, e2, e3) =
+		let
+			e1Exp = unCx(e1)
+			thenLabel = Te.newlabel()
+			elseLabel = Te.newlabel()
+			doneLabel = Te.newlabel()
+			rTemp = Te.newtemp()
+		in
+			case (e2, e3) of (* Remember, both e2 and e3 are of same types -> Will throw warnings, but how to print errors without pos?*)
+				(Cx e2C, Cs e3C) =>
+					Cx (fn (t,f) =>
+						T.SEQ[(e1Exp), (thenLabel, elseLabel),
+								T.LABEL thenLabel,
+								(unCx e2C) (t, f),
+								T.LABEL elseLabel,
+								(unCx e3C) (t,f)])
+				| (Nx e2N, Nx e3N) =>
+					Nx (T.SEQ[(e1Exp) (thenLabel, elseLabel),
+								T.LABEL thenLabel,
+								unNx e2N,
+								T.JUMP (T.NAME doneLabel, [doneLabel]),
+								T.LABEL elseLabel,
+								unNx e3N,
+								T.LABEL doneLabel])
+				| (Ex e2E, Ex e3E) =>
+					Ex (T.ESEQ(T.SEQ[(e1Exp) (thenLabel, elseLabel),
+								T.LABEL thenLabel,
+								T.MOVE (T.TEMP rTemp, e2E),
+								T.JUMP (T.NAME doneLabel, [doneLabel]),
+								T.LABEL elseLabel,
+								T.MOVE (T.TEMP rTemp, e3E),
+								T.LABEL doneLabel],
+						T.TEMP rTemp))
+								
+		end
 	
 	fun getResult = !fraglist
 end
