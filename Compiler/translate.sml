@@ -31,18 +31,13 @@ sig
 	val forExp : (exp * Tree.label * exp * exp * exp) -> exp
 	val arrayExp : (int * exp) -> exp
 	val recordExp : {length : int, fields : exp list} -> exp
+	val callExp : (level * Tree.label * exp list) -> exp
 	(*
 		StringComparison Exp
-		
-		Call Exp
 	*)
 	
-	(* Var Expressions *)
-	(*
-		SimpleVar
-		FieldVar
-		SubscriptVar
-	*)
+	val simpleVar : (access * level) -> exp
+	val indexedVar : (exp * exp) -> exp
 	
 	val unEx : exp -> Tree.exp
 	val unNx : exp -> Tree.stm
@@ -283,6 +278,29 @@ struct
 					r))
 		end
 
+	fun callExp(level, label, formals) = Ex(T.CALL(T.NAME(label), map unEx formals))
+		
+	fun simpleVar ((defaultLevel, defaultAccess):access, level:level) =
+		let
+			val (Level(frameRec, defaultRef)) = defaultLevel
+			fun followStaticLinks(Level({parent, frame}, currentRef): level, currentAccess : T.exp) =
+				if (defaultRef = currentRef) then
+					F.exp(defaultAccess) (currentAccess)
+				else
+					followStaticLinks(parent, F.exp(hd(F.formals frame)) (currentAccess))					
+		in
+			Ex(followStaticLinks(level, T.TEMP(F.FP)))
+		end
+		
+	fun indexedVar (var, index) =
+		let
+			val varExp = unEx var
+			val indexExp = unEx index
+			val offsetExp = T.BINOP(T.MUL, indexExp, T.CONST(F.wordSize))
+		in
+			Ex (T.MEM(T.BINOP(T.PLUS, varExp, offsetExp)))
+		end
+		
 	fun procEntryExit({level=level, body=body}) =
 		() (* TODO *)
 	
