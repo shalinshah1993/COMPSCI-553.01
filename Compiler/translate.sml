@@ -30,11 +30,11 @@ sig
 	val whileExp : (exp * exp) -> exp
 	val forExp : (exp * Tree.label * exp * exp * exp) -> exp
 	val arrayExp : (int * exp) -> exp
+	val recordExp : {length : int, fields : exp list} -> exp
 	(*
 		StringComparison Exp
 		
 		Call Exp
-		RecordExp
 	*)
 	
 	(* Var Expressions *)
@@ -266,6 +266,21 @@ struct
 					[T.MOVE(startAdd, F.externalCall("malloc", [T.BINOP(T.MUL, T.CONST(length), T.CONST(F.wordSize))])), 
 					T.EXP (F.externalCall("initArray", [T.CONST(length), unEx(initVal)]))], 
 					startAdd))
+		end
+
+	(* Instead of start address, return TEMP(r) as per appel *)
+	fun recordExp({length = length, fields = fields}) =
+		let
+			val r = T.TEMP(Te.newtemp())
+
+			fun initFields([], result, curOffset, labelR) = result
+			| initFields(first::rest, result, curOffset, labelR):T.stm list = 
+				initFields(rest, [(T.MOVE(T.MEM(T.BINOP(T.PLUS, (labelR), T.BINOP(T.MUL, T.CONST(curOffset), T.CONST(F.wordSize)))), unEx(first)))] @ result, curOffset + 1, labelR)
+		in
+			Ex (T.ESEQ(seq 
+					[T.MOVE(r, F.externalCall("malloc", [T.BINOP(T.MUL, T.CONST(length), T.CONST(F.wordSize))])), 
+					seq(initFields(fields, [], 0, r))], 
+					r))
 		end
 
 	fun procEntryExit({level=level, body=body}) =
