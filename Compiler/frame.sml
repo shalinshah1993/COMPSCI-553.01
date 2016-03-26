@@ -46,9 +46,7 @@ struct
 	
 	datatype frag = PROC of {body: Tr.stm, frame: frame}
 					| STRING of Tp.label * string
-	
-
-	
+		
  	fun newFrame({name = name, formals = formals}) = 
  		let
  			val currOffset = ref 0

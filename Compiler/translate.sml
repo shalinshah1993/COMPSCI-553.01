@@ -29,12 +29,12 @@ sig
 	val ifElseExp : (exp * exp * exp) -> exp
 	val whileExp : (exp * exp) -> exp
 	val forExp : (exp * Tree.label * exp * exp * exp) -> exp
+	val arrayExp : (int * exp) -> exp
 	(*
 		StringComparison Exp
 		
 		Call Exp
 		RecordExp
-		Array Exp
 	*)
 	
 	(* Var Expressions *)
@@ -258,6 +258,16 @@ struct
 				T.LABEL doneLabel])
 		end
 	
+	fun arrayExp(length, initVal) = 
+		let
+			 val startAdd = T.TEMP(Te.newtemp())
+		in
+			Ex (T.ESEQ(seq 
+					[T.MOVE(startAdd, F.externalCall("malloc", [T.BINOP(T.MUL, T.CONST(length), T.CONST(F.wordSize))])), 
+					T.EXP (F.externalCall("initArray", [T.CONST(length), unEx(initVal)]))], 
+					startAdd))
+		end
+
 	fun procEntryExit({level=level, body=body}) =
 		() (* TODO *)
 	
