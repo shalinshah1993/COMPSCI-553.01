@@ -124,7 +124,7 @@ struct
 			| subTransExp (A.CallExp {func=func, args=args, pos=pos}) = 
 				(
 				case S.look(venv, func) of 
-					SOME (E.FunEntry {formals=formals, result=result}) => 
+					SOME (E.FunEntry {formals=formals, result=result, level=level, label=label}) => 
 						let
 							val transArgs = map subTransExp args
 							fun checkArgsType ([], [], pos) = true
