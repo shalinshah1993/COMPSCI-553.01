@@ -365,15 +365,19 @@ struct
 			| subTransVar (A.FieldVar (var, symbol, pos)) = 
 				let
 					val {exp=varExp, ty=varType} = transVar(venv, tenv, var, level);
+
+					fun findFieldWithIndex([], symToFind, pos, index) = (Er.error pos "Could not find the correct FIELD VAR";{exp=Tr.nilExp(), ty=T.ERROR})
+					| findFieldWithIndex((sym, typeOfSym)::others, symToFind, pos, index) =
+						if sym = symToFind then
+							{exp=Tr.fieldVar(varExp, Tr.intExp(index)), ty=actual_ty(typeOfSym, pos)}
+						else
+							findFieldWithIndex(others, symToFind, pos, index + 1)  
 				in
-					(case varType of
-						T.RECORD(fields, unique) =>
-						(case List.find (fn recTups => (#1 recTups) = symbol) fields of
-							NONE => 
-								(Er.error pos "Could not find the correct FIELD VAR";{exp=Tr.nilExp(), ty=T.ERROR})
-							| SOME(recTup) => {exp=Tr.nilExp(), ty=actual_ty(#2 recTup, pos)})
-						| _ =>
-							(Er.error pos ("Field variable must be of type T.RECORD"); {exp=Tr.nilExp(), ty=T.ERROR}))
+					(
+						case varType of
+							T.RECORD(fields, unique) => findFieldWithIndex(fields, symbol, pos, 0)
+							| _ => (Er.error pos ("Field variable must be of type T.RECORD"); {exp=Tr.nilExp(), ty=T.ERROR})
+					)
 				end
 			| subTransVar (A.SubscriptVar (var, exp, pos)) = 
 				(let
