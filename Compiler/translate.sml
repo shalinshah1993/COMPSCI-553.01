@@ -37,7 +37,7 @@ sig
 	*)
 	
 	val simpleVar : (access * level) -> exp
-	val fieldVar : (exp * exp) -> exp
+	val indexedVar : (exp * exp) -> exp
 	
 	val unEx : exp -> Tree.exp
 	val unNx : exp -> Tree.stm
@@ -295,7 +295,7 @@ struct
 			Ex(followStaticLinks(level, T.TEMP(F.FP)))
 		end
 		
-	fun fieldVar (var, index) =
+	fun indexedVar (var, index) =
 		let
 			val varExp = unEx var
 			val indexExp = unEx index

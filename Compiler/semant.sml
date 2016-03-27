@@ -369,7 +369,7 @@ struct
 					fun findFieldWithIndex([], symToFind, pos, index) = (Er.error pos "Could not find the correct FIELD VAR";{exp=Tr.nilExp(), ty=T.ERROR})
 					| findFieldWithIndex((sym, typeOfSym)::others, symToFind, pos, index) =
 						if sym = symToFind then
-							{exp=Tr.fieldVar(varExp, Tr.intExp(index)), ty=actual_ty(typeOfSym, pos)}
+							{exp=Tr.indexedVar(varExp, Tr.intExp(index)), ty=actual_ty(typeOfSym, pos)}
 						else
 							findFieldWithIndex(others, symToFind, pos, index + 1)  
 				in
@@ -381,12 +381,12 @@ struct
 				end
 			| subTransVar (A.SubscriptVar (var, exp, pos)) = 
 				(let
-					val {exp=varExp, ty=varType} = transVar(venv,tenv,var, level);
-					val expExpTy = transExp(venv,tenv,exp,level)
+					val {exp=varExp, ty=varType} = transVar(venv,tenv, var, level);
+					val expExpTy = transExp(venv, tenv, exp, level)
 				in
 					if (checkInt(expExpTy, pos)) then
 						(case varType of
-							T.ARRAY (baseType, unique) => {exp=Tr.nilExp(), ty = (actual_ty (baseType, pos))}
+							T.ARRAY (baseType, unique) => {exp=Tr.indexedVar(varExp, #exp(expExpTy)), ty = (actual_ty (baseType, pos))}
 							| _ => (Er.error pos ("Variable must be of type T.ARRAY"); {exp=Tr.nilExp(), ty=T.ERROR}))
 					else
 						(Er.error pos ("ARRAY subscript must be of type INT");{exp=Tr.nilExp(), ty=T.ERROR})
