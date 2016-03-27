@@ -49,6 +49,7 @@ struct
 	structure T = Tree
 	structure Te = Temp
 	structure A = Absyn
+	structure Er = ErrorMsg
 	
 	val fraglist = ref [] : F.frag list ref
 	
@@ -71,6 +72,7 @@ struct
 			| Level ({frame=frame, parent=parent}, unique) =>
 				let
 					fun handleAccess(a::l) = (Level({frame=frame, parent=parent}, unique), a)::handleAccess(l)
+					| handleAccess(nil) = []
 				in
 					handleAccess(tl(F.formals(frame)))
 				end
@@ -104,8 +106,8 @@ struct
 	fun unCx (Cx genstm) = genstm
 		| unCx (Ex (T.CONST 0)) = (fn (t,f) => T.JUMP(T.NAME(f), [f])) (* 0 would be binary false, so just jump to the false destination *)
 		| unCx (Ex (T.CONST 1)) = (fn (t,f) => T.JUMP(T.NAME(t), [t])) (* 1 would be binary true, so just jump to the true destination*)
-		| unCx (Ex e) = (fn(t,f) => T.CJUMP(T.EQ, e, T.CONST 1,t, f)) (*Evaluate if equality true or false, then jump to t/f destination *)
-		(* Can never hav unCx (Nx, _), per Appel *)
+		| unCx (Ex e) = (fn(t,f) => T.CJUMP(T.EQ, e, T.CONST 1, t, f)) (*Evaluate if equality true or false, then jump to t/f destination *)
+		| unCx (Nx stm) = (fn(t, f) => stm)								(* This is just a HACK Nx can never occur as per Appel *)
 
 	(* Nx stands for "no result", represented as a Tree statement*)
 	fun unNx (Nx s) = s
@@ -189,7 +191,8 @@ struct
 			val doneLabel = Te.newlabel()
 			val rTemp = Te.newtemp()
 		in
-			case (e2, e3) of (* Remember, both e2 and e3 are of same types -> Will throw warnings, but how to print errors without pos?*)
+			(* Remember, both e2 and e3 are of same types -> Will throw warnings, but how to print errors without pos? *)
+			case (e2, e3) of 
 				(Cx e2C, Cx e3C) =>
 					Cx (fn (t,f) =>
 						seq[(e1Exp) (thenLabel, elseLabel),
@@ -214,7 +217,7 @@ struct
 								T.MOVE (T.TEMP rTemp, unEx e3),
 								T.LABEL doneLabel],
 						T.TEMP rTemp))
-								
+				| _ => (Er.error 0 "Both the expressions are not of the same type. Compiler Error!"; nilExp())
 		end
 		
 	fun forExp (var, escape, lo, hi, body) =
