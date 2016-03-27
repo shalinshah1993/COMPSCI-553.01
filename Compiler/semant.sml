@@ -331,7 +331,7 @@ struct
 								T.ARRAY(t,u) =>
 									if (checkInt(sizeExpTy,pos)) then
 										if (assertSubTypes(t, #ty initExpTy, pos, pos)) then
-											{exp=Tr.nilExp(), ty=T.ARRAY(t,u)}
+											{exp=Tr.arrayExp(#exp sizeExpTy, #exp initExpTy), ty=T.ARRAY(t,u)}
 										else
 											(Er.error pos ("Type mismatch between initial expression and base type"); {exp=Tr.nilExp(), ty=T.ERROR})
 									else
