@@ -191,9 +191,18 @@ struct
 							(Er.error pos ("Field and type cannot be resolved to same symbol");false)
 					| resolveFieldLists([],[]) = true (*Everything has been resolved from the previous lists*)
 					| resolveFieldLists(_,_) = false (*Makes the list of matches exhaustive, hides compiler error*)
+
+					(* This is required to just iterate over every fields and translate them *)
+					fun translateFieldList((symbol, exp, pos)::rest, result) = 
+			  			let
+			  				val tranlatedField = subTransExp(exp)
+			  			in
+			  				translateFieldList(rest, result @ [(#exp tranlatedField)])
+			  			end
+			  			| translateFieldList([], result) = result
 				in
 					if (resolveFieldLists(fields, fieldTypes)) then
-						{exp=Tr.nilExp(), ty=T.RECORD(fieldTypes, unique)}
+						{exp=Tr.recordExp({fields=translateFieldList(fields, []),length=length(fields)}), ty=T.RECORD(fieldTypes, unique)}
 					else
 						(Er.error pos "Could not resolve the record field list";{exp=Tr.nilExp(), ty=T.ERROR})
 				end
