@@ -193,13 +193,14 @@ struct
 					| resolveFieldLists(_,_) = false (*Makes the list of matches exhaustive, hides compiler error*)
 
 					(* This is required to just iterate over every fields and translate them *)
-					fun translateFieldList((symbol, exp, pos)::rest, result) = 
+					fun translateFieldList([], result) = result
+					| translateFieldList((symbol, exp, pos)::rest, result) = 
 			  			let
 			  				val tranlatedField = subTransExp(exp)
 			  			in
 			  				translateFieldList(rest, result @ [(#exp tranlatedField)])
 			  			end
-			  			| translateFieldList([], result) = result
+
 				in
 					if (resolveFieldLists(fields, fieldTypes)) then
 						{exp=Tr.recordExp({fields=translateFieldList(fields, []),length=length(fields)}), ty=T.RECORD(fieldTypes, unique)}
