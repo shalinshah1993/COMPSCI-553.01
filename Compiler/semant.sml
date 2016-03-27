@@ -119,9 +119,9 @@ struct
 	fun transExp(venv,tenv,exp,level) = 
 		let
 			fun subTransExp (A.VarExp var) = transVar(venv,tenv,var,level)
-			| subTransExp (A.NilExp) = {exp=(), ty=T.NIL}
-			| subTransExp (A.IntExp i) = {exp=(), ty=T.INT}
-			| subTransExp (A.StringExp (str,pos)) = {exp=(), ty=T.STRING}
+			| subTransExp (A.NilExp) = {exp=(Tr.nilExp()), ty=T.NIL}
+			| subTransExp (A.IntExp i) = {exp=(Tr.intExp(i)), ty=T.INT}
+			| subTransExp (A.StringExp (str,pos)) = {exp=(Tr.stringExp(str)), ty=T.STRING}
 			| subTransExp (A.CallExp {func=func, args=args, pos=pos}) = 
 				(
 				case S.look(venv, func) of 
@@ -138,7 +138,7 @@ struct
 									false
 						in
 							if length(transArgs) <> length(formals) then
-		  						(Er.error pos "Incorrect number of arguments in fuction "; {exp=(),ty=actual_ty(result, pos)})
+		  						(Er.error pos "Incorrect number of arguments in fuction "; {exp=(Tr.callExp(level, label, map (#exp) transArgs)),ty=actual_ty(result, pos)})
 		  					else 
 		  					(
 		  						(
@@ -147,34 +147,34 @@ struct
 			  						else 
 			  							(Er.error pos "Function has incorrect parameters")
 		  						);
-		  						{exp=(),ty=actual_ty(result, pos)}
+		  						{exp=(Tr.callExp(level, label, map (#exp) transArgs)),ty=actual_ty(result, pos)}
 		  					)
 						end
-					|  _ => (Er.error pos "No such function exists"; {exp=(),ty=T.ERROR})
+					|  _ => (Er.error pos "No such function exists"; {exp=Tr.nilExp(),ty=T.ERROR})
 				)
 			| subTransExp (A.OpExp {left=left, oper=oper, right=right, pos=pos}) = 
-				if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
-					(if (checkInt(transExp(venv,tenv,left,level),pos)) then
-						(if(checkInt(transExp(venv,tenv,right,level),pos)) then
-							{exp=(), ty=T.INT}
+				let
+					val {exp=leftExp, ty=leftType} = transExp(venv,tenv,left,level)
+					val {exp=rightExp, ty=rightType} = transExp(venv,tenv,right,level)
+				in
+					if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
+						(if (checkInt({exp=leftExp, ty=leftType},pos)) then
+							(if(checkInt({exp=rightExp, ty=rightType},pos)) then
+								{exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=T.INT}
+							else
+								((Er.error pos ("Right OPERAND is not of type INT"));{exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=T.ERROR}))
 						else
-							((Er.error pos ("Right OPERAND is not of type INT"));{exp=(), ty=T.ERROR}))
-					else
-						((Er.error pos ("Left OPERAND is not of type INT"));{exp=(), ty=T.ERROR})
-					)
-				else if (oper=A.EqOp orelse oper=A.NeqOp) then
-					let
-						val {exp=exp, ty=leftType} = transExp(venv,tenv,left,level)
-						val {exp=exp, ty=rightType} = transExp(venv,tenv,right,level)
-					in
+							((Er.error pos ("Left OPERAND is not of type INT"));{exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=T.ERROR})
+						)
+					else if (oper=A.EqOp orelse oper=A.NeqOp) then
 						if assertSubTypes(leftType,rightType,pos,pos) then
-							{exp=(), ty=actual_ty (leftType,pos)}
+							{exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=actual_ty (leftType,pos)}
 						else
-							(Er.error pos "Type mismatch between left and right expressions of operand"; {exp=(),ty=T.ERROR})
-					end
-					
-				else
-					(Er.error pos "Could not discern the operator type"; {exp=(), ty=T.ERROR})
+							(Er.error pos "Type mismatch between left and right expressions of operand"; {exp=(Tr.intArithExp(oper,leftExp,rightExp)),ty=T.ERROR})
+					else
+						(Er.error pos "Could not discern the operator type"; {exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=T.ERROR})
+				end
+				
 			| subTransExp (A.RecordExp {fields=fields, typ=typ, pos=pos}) = 
 				let 
 					val T.RECORD(fieldTypes, unique) = 
@@ -193,17 +193,27 @@ struct
 					| resolveFieldLists(_,_) = false (*Makes the list of matches exhaustive, hides compiler error*)
 				in
 					if (resolveFieldLists(fields, fieldTypes)) then
-						{exp=(), ty=T.RECORD(fieldTypes, unique)}
+						{exp=Tr.nilExp(), ty=T.RECORD(fieldTypes, unique)}
 					else
-						(Er.error pos "Could not resolve the record field list";{exp=(), ty=T.ERROR})
+						(Er.error pos "Could not resolve the record field list";{exp=Tr.nilExp(), ty=T.ERROR})
 				end
 			| subTransExp (A.SeqExp exps) = 
 				let
-					fun subTransExps ([]) = {exp=(), ty=T.UNIT}
-					| subTransExps ([(exp,pos)]) = transExp(venv, tenv, exp,level)
-					| subTransExps((exp, pos)::l) = (transExp(venv,tenv,exp,level);subTransExps(l));
+					fun subTransExps ([], translatedList) = {exp=Tr.seqExp(translatedList), ty=T.UNIT}
+					| subTransExps ([(exp,pos)], translatedList) = 
+						let
+							val {exp=transExp, ty=transTy} = transExp(venv,tenv,exp,level)
+						in
+							subTransExps([], transExp::translatedList)
+						end
+					| subTransExps((exp, pos)::l, translatedList) = 
+						let
+							val {exp=transExp, ty=transTy} = transExp(venv,tenv,exp,level)
+						in
+							subTransExps(l, transExp::translatedList)
+						end
 				in
-					subTransExps exps
+					subTransExps (exps, [])
 				end
 			| subTransExp (A.AssignExp {var=var, exp=exp, pos=pos}) = 
 				let
@@ -211,9 +221,9 @@ struct
 					val {exp=varExp, ty=varTy} = transVar (venv,tenv,var, level)
 				in
 					if (assertSubTypes(expTy, varTy, pos, pos)) then
-						{exp=(), ty=T.UNIT}
+						{exp=(Tr.assignExp(varExp, expExp)), ty=T.UNIT}
 					else
-						((Er.error pos ("Cannot assign a value to variable that is not a subtype of the variable type"); {exp=(), ty=T.ERROR}))
+						((Er.error pos ("Cannot assign a value to variable that is not a subtype of the variable type"); {exp=(Tr.assignExp(varExp, expExp)), ty=T.ERROR}))
 				end
 			| subTransExp (A.IfExp {test=test, then'=thenexp, else'=elsexp, pos=pos}) = 
 				(case elsexp of
@@ -224,11 +234,11 @@ struct
 						in
 							if (checkInt(testExp, pos)) then
 								if (checkUnit(realThenExp, pos)) then
-									{exp=(), ty=T.UNIT}
+									{exp=(Tr.ifExp((#exp testExp), (#exp realThenExp))), ty=T.UNIT}
 								else
-									((Er.error pos "THEN expression is not of type UNIT");{exp=(), ty=T.ERROR})
+									((Er.error pos "THEN expression is not of type UNIT");{exp=((Tr.ifExp((#exp testExp), (#exp realThenExp)))), ty=T.ERROR})
 							else
-								((Er.error pos "TEST expression is not of type INT");{exp=(), ty=T.ERROR})
+								((Er.error pos "TEST expression is not of type INT");{exp=((Tr.ifExp((#exp testExp), (#exp realThenExp)))), ty=T.ERROR})
 						end)
 					| SOME e => 
 						(let
@@ -238,11 +248,11 @@ struct
 						in
 							if (checkInt(testExp, pos)) then
 								(if (assertSubTypes(#ty realThenExp, #ty realElseExp, pos, pos)) then
-									{exp=(), ty=actual_ty(#ty realElseExp, pos)}
+									{exp=((Tr.ifElseExp((#exp testExp), (#exp realThenExp), (#exp realElseExp)))), ty=actual_ty(#ty realElseExp, pos)}
 								else
-									((Er.error pos "Type Mismatch between THEN and ELSE expressions");{exp=(), ty=T.ERROR}))
+									((Er.error pos "Type Mismatch between THEN and ELSE expressions");{exp=((Tr.ifElseExp((#exp testExp), (#exp realThenExp), (#exp realElseExp)))), ty=T.ERROR}))
 							else
-								((Er.error pos "TEST expression is not of type");{exp=(), ty=T.ERROR})
+								((Er.error pos "TEST expression is not of type");{exp=((Tr.ifElseExp((#exp testExp), (#exp realThenExp), (#exp realElseExp)))), ty=T.ERROR})
 						end))
 			| subTransExp (A.WhileExp {test=test, body=body, pos=pos}) = 
 				let
@@ -254,17 +264,18 @@ struct
 				in
 					(if checkInt(testExpTy, pos) then
 						(if checkUnit(bodyExpTy, pos) then
-							{exp=(), ty=T.UNIT}
+							{exp=(Tr.whileExp((#exp testExpTy),(#exp bodyExpTy))), ty=T.UNIT}
 						else
-							(Er.error pos "WHILE LOOP BODY is not of type UNIT"; { exp=(), ty=T.ERROR}))
+							(Er.error pos "WHILE LOOP BODY is not of type UNIT"; { exp=(Tr.whileExp((#exp testExpTy),(#exp bodyExpTy))), ty=T.ERROR}))
 					else
-						(Er.error pos "WHILE LOOP TEST expression is not of type INT"; { exp=(), ty=T.ERROR}))
+						(Er.error pos "WHILE LOOP TEST expression is not of type INT"; { exp=(Tr.whileExp((#exp testExpTy),(#exp bodyExpTy))), ty=T.ERROR}))
 				end
 			| subTransExp (A.ForExp {var=var, escape=escape, lo=lo, hi=hi, body=body, pos=pos}) = 
 				let
 					val _ = loopDepth := !loopDepth + 1
 					val accessLevel = Tr.allocLocal level (!escape)
 					val venv' = S.enter(venv, var, (E.VarEntry ({access=accessLevel, ty=T.INT})))
+					(*val varExpTy = transVar(venv', tenv, var, level)*)
 					val bodyExpTy = transExp(venv', tenv, body,level)
 					val loExpTy = transExp(venv', tenv, lo,level)
 					val hiExpTy = transExp(venv', tenv, hi,level)
@@ -274,25 +285,25 @@ struct
 					(if checkInt(loExpTy, pos) then
 						(if checkInt(hiExpTy, pos) then
 							(if (checkUnit(bodyExpTy, pos) orelse checkNil(bodyExpTy, pos)) then
-								{exp=(), ty=T.UNIT}
+								{exp=Tr.nilExp(), ty=T.UNIT}
 							else
 								(
-								(Er.error pos "FOR LOOP BODY is not of type UNIT"; { exp=(), ty=T.ERROR})))
+								(Er.error pos "FOR LOOP BODY is not of type UNIT"; { exp=Tr.nilExp(), ty=T.ERROR})))
 						else
-							(Er.error pos "FOR LOOP HI expression is not of type INT"; { exp=(), ty=T.ERROR}))
+							(Er.error pos "FOR LOOP HI expression is not of type INT"; { exp=Tr.nilExp(), ty=T.ERROR}))
 					else
-						(Er.error pos "FOR LOOP LO expression is not of type INT"; { exp=(), ty=T.ERROR}))
+						(Er.error pos "FOR LOOP LO expression is not of type INT"; { exp=Tr.nilExp(), ty=T.ERROR}))
 				end
 			| subTransExp (A.BreakExp pos) = 
 				let
 					val _ = breakCount := !breakCount + 1
 				in
 					if !loopDepth = 0 then
-						(Er.error pos "BREAK can occur only inside a loop"; { exp=(), ty=T.ERROR })
+						(Er.error pos "BREAK can occur only inside a loop"; { exp=Tr.nilExp(), ty=T.ERROR })
 					else if !breakCount > 1 then
-						(Er.error pos "No more loops to BREAK"; { exp=(), ty=T.ERROR})
+						(Er.error pos "No more loops to BREAK"; { exp=Tr.nilExp(), ty=T.ERROR})
 					else
-						{ exp=(), ty=T.UNIT }
+						{ exp=Tr.nilExp(), ty=T.UNIT }
 				end
 			| subTransExp (A.LetExp {decs=decs, body=body, pos=pos}) =
 				let
@@ -320,15 +331,15 @@ struct
 								T.ARRAY(t,u) =>
 									if (checkInt(sizeExpTy,pos)) then
 										if (assertSubTypes(t, #ty initExpTy, pos, pos)) then
-											{exp=(), ty=T.ARRAY(t,u)}
+											{exp=Tr.nilExp(), ty=T.ARRAY(t,u)}
 										else
-											(Er.error pos ("Type mismatch between initial expression and base type"); {exp=(), ty=T.ERROR})
+											(Er.error pos ("Type mismatch between initial expression and base type"); {exp=Tr.nilExp(), ty=T.ERROR})
 									else
-										(Er.error pos "SIZE of array must be defined as an INT"; {exp=(), ty=T.ERROR})
+										(Er.error pos "SIZE of array must be defined as an INT"; {exp=Tr.nilExp(), ty=T.ERROR})
 								| _ => 
-									(Er.error pos ("Cannot define an array as anything other than as an array"); {exp=(), ty=T.ERROR}))
+									(Er.error pos ("Cannot define an array as anything other than as an array"); {exp=Tr.nilExp(), ty=T.ERROR}))
 						| NONE =>
-							(Er.error pos ("Could not define base type of array"); {exp=(), ty=T.ERROR}))
+							(Er.error pos ("Could not define base type of array"); {exp=Tr.nilExp(), ty=T.ERROR}))
 				end
 		in
 			subTransExp exp
@@ -338,9 +349,9 @@ struct
 		let
 			fun subTransVar (A.SimpleVar(simVar,pos)) =
 				(case S.look(venv, simVar) of
-					SOME (E.VarEntry({access=_,ty=t})) => {exp=(), ty=actual_ty(t,pos)}
-					| SOME(_) => (Er.error pos ("Expected VARIABLE, but instead found a FUNCTION"); {exp=(), ty=T.ERROR})
-					| NONE => (Er.error pos ("Undefined variable " ^ S.name(simVar)); {exp=(), ty=T.ERROR}))
+					SOME (E.VarEntry({access=a,ty=t})) => {exp=(Tr.simpleVar(a, level)), ty=actual_ty(t,pos)}
+					| SOME(_) => (Er.error pos ("Expected VARIABLE, but instead found a FUNCTION"); {exp=Tr.nilExp(), ty=T.ERROR})
+					| NONE => (Er.error pos ("Undefined variable " ^ S.name(simVar)); {exp=Tr.nilExp(), ty=T.ERROR}))
 			| subTransVar (A.FieldVar (var, symbol, pos)) = 
 				let
 					val {exp=varExp, ty=varType} = transVar(venv, tenv, var, level);
@@ -349,10 +360,10 @@ struct
 						T.RECORD(fields, unique) =>
 						(case List.find (fn recTups => (#1 recTups) = symbol) fields of
 							NONE => 
-								(Er.error pos "Could not find the correct FIELD VAR";{exp=(), ty=T.ERROR})
-							| SOME(recTup) => {exp=(), ty=actual_ty(#2 recTup, pos)})
+								(Er.error pos "Could not find the correct FIELD VAR";{exp=Tr.nilExp(), ty=T.ERROR})
+							| SOME(recTup) => {exp=Tr.nilExp(), ty=actual_ty(#2 recTup, pos)})
 						| _ =>
-							(Er.error pos ("Field variable must be of type T.RECORD"); {exp=(), ty=T.ERROR}))
+							(Er.error pos ("Field variable must be of type T.RECORD"); {exp=Tr.nilExp(), ty=T.ERROR}))
 				end
 			| subTransVar (A.SubscriptVar (var, exp, pos)) = 
 				(let
@@ -361,10 +372,10 @@ struct
 				in
 					if (checkInt(expExpTy, pos)) then
 						(case varType of
-							T.ARRAY (baseType, unique) => {exp=(), ty = (actual_ty (baseType, pos))}
-							| _ => (Er.error pos ("Variable must be of type T.ARRAY"); {exp=(), ty=T.ERROR}))
+							T.ARRAY (baseType, unique) => {exp=Tr.nilExp(), ty = (actual_ty (baseType, pos))}
+							| _ => (Er.error pos ("Variable must be of type T.ARRAY"); {exp=Tr.nilExp(), ty=T.ERROR}))
 					else
-						(Er.error pos ("ARRAY subscript must be of type INT");{exp=(), ty=T.ERROR})
+						(Er.error pos ("ARRAY subscript must be of type INT");{exp=Tr.nilExp(), ty=T.ERROR})
 				end)
 		in
 			subTransVar var
