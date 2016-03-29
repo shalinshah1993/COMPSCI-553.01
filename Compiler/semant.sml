@@ -10,7 +10,7 @@ sig
 	val	transDec: venv * tenv * Absyn.dec * Translate.level -> {venv: venv, tenv: tenv} 
 	val	transTy: tenv * Absyn.ty -> Types.ty 
 		
-	val	transProg: Absyn.exp -> unit
+	val	transProg: Absyn.exp -> {frags: MIPSFrame.frag list, ty: Types.ty}
 end
 
 structure Semant :> SEMANT =
@@ -295,7 +295,7 @@ struct
 					(if checkInt(loExpTy, pos) then
 						(if checkInt(hiExpTy, pos) then
 							(if (checkUnit(bodyExpTy, pos) orelse checkNil(bodyExpTy, pos)) then
-								{exp=Tr.nilExp(), ty=T.UNIT}
+								{exp=Tr.forExp(Tr.simpleVar(accessLevel, level), Tmp.newlabel(), (#exp loExpTy), (#exp hiExpTy), (#exp bodyExpTy)), ty=T.UNIT}
 							else
 								(
 								(Er.error pos "FOR LOOP BODY is not of type UNIT"; { exp=Tr.nilExp(), ty=T.ERROR})))
@@ -313,7 +313,7 @@ struct
 					else if !breakCount > 1 then
 						(Er.error pos "No more loops to BREAK"; { exp=Tr.nilExp(), ty=T.ERROR})
 					else
-						{ exp=Tr.nilExp(), ty=T.UNIT }
+						{ exp=Tr.breakExp(Tmp.newlabel()), ty=T.UNIT }
 				end
 			| subTransExp (A.LetExp {decs=decs, body=body, pos=pos}) =
 				let
@@ -570,6 +570,7 @@ struct
 			val base = Tr.newLevel({parent=Tr.outermost, name=Tmp.namedlabel("base"),formals=[]})
 			val tree = transExp(venv, tenv, expr,base)
 		in
-			()
+			Tr.procEntryExit({level=base,body=(#exp tree)});
+            {frags=Tr.getResult(), ty=(#ty tree)}
 	end
 end

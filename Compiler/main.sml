@@ -7,12 +7,34 @@ structure Main :> MAIN=
 struct
 	structure P = Parse
 	structure Sem = Semant
+	structure F = MIPSFrame
+	structure S = Symbol
+	
+	fun printFrag (frag: F.frag) =
+		case frag
+		  of F.PROC {body=body, frame=frame} =>
+			   (print("  body:\n");
+			   Printtree.printtree (TextIO.stdOut, body))
+		   | F.STRING (label, name) =>
+			   (print("  label "^(S.name(label))^": "^name^"\n"));
+			 
+
+	  fun printFrags (fragments: F.frag list) =
+		(print("frags:\n");
+		app printFrag fragments)
+	
+	
 	fun runFile filename = 
 		let
 			val ast = P.parse filename
 			val outfile = TextIO.openOut ("printedAST.out")
 		in
-			PrintAbsyn.print(outfile, ast);
-			Sem.transProg ast
+			let
+				val {frags:MIPSFrame.frag list, ty:Types.ty} = Sem.transProg ast
+			in
+				(PrintAbsyn.print(outfile, ast);
+				printFrags(frags);
+				print "Done!\n")
+			end
 		end
 end

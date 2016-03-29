@@ -32,6 +32,7 @@ sig
 	val arrayExp : (exp * exp) -> exp
 	val recordExp : {length : int, fields : exp list} -> exp
 	val callExp : (level * Tree.label * exp list) -> exp
+	val breakExp : Tree.label -> exp
 	(*
 		StringComparison Exp
 	*)
@@ -51,7 +52,7 @@ struct
 	structure A = Absyn
 	structure Er = ErrorMsg
 	
-	val fraglist = ref [] : F.frag list ref
+	val fraglist = ref ([] : F.frag list)
 	
 	datatype exp = Ex of T.exp
 					| Nx of T.stm
@@ -305,7 +306,17 @@ struct
 		end
 		
 	fun procEntryExit({level=level, body=body}) =
-		() (* TODO *)
+		let
+			val _ = (fraglist := [])
+			val frame = (case level of
+						  Level({frame,parent}, _) => frame)
+
+			val body' = F.procEntryExit1(frame, unNx(body))
+			val frag = F.PROC({body=body',frame=frame})
+			val _ = (fraglist := frag::(!fraglist))
+		  in
+			()
+		  end
 	
 	fun getResult () = !fraglist
 end
