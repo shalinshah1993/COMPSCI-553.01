@@ -270,10 +270,7 @@ struct
 			 val startAdd = T.TEMP(Te.newtemp())
 		in
 			print "arrayExp\n";
-			Ex (T.ESEQ(seq 
-					[T.MOVE(startAdd, F.externalCall("malloc", [T.BINOP(T.MUL, unEx(length), T.CONST(F.wordSize))])), 
-					T.EXP (F.externalCall("initArray", [unEx(length), unEx(initVal)]))], 
-					startAdd))
+			Ex (T.ESEQ(T.MOVE(startAdd, F.externalCall("initArray", [unEx(length), unEx(initVal)])), startAdd))
 		end
 
 	(* Instead of start address, return TEMP(r) as per appel *)
