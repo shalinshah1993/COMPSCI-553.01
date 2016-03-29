@@ -285,7 +285,6 @@ struct
 					val _ = loopDepth := !loopDepth + 1
 					val accessLevel = Tr.allocLocal level (!escape)
 					val venv' = S.enter(venv, var, (E.VarEntry ({access=accessLevel, ty=T.INT})))
-					(*val varExpTy = transVar(venv', tenv, var, level)*)
 					val bodyExpTy = transExp(venv', tenv, body,level)
 					val loExpTy = transExp(venv', tenv, lo,level)
 					val hiExpTy = transExp(venv', tenv, hi,level)
@@ -326,9 +325,16 @@ struct
 								in
 									extractDec(newVenv, newTenv, l)
 								end)
+					fun translateDecs (vnv, tnv, [], decList) = decList
+						| translateDecs (vnv, tnv, (dec::l), decList) =
+							(case (dec) of
+								 A.VarDec({name=name, escape=escape, typ=typ, init=init, pos=pos}) => translateDecs(vnv, tnv, l, (#exp (transExp(vnv, tnv, init, level)))::decList)
+								 | _ => translateDecs(vnv, tnv, l, decList))
 					val {venv=finalVenv, tenv=finalTenv} = extractDec(venv,tenv,decs)
+					val {exp=finalExp, ty=finalTy} = transExp(finalVenv, finalTenv, body,level)
+					val decList = translateDecs(finalVenv, finalTenv, decs, [])
 				in
-					transExp(finalVenv, finalTenv, body,level)
+					{exp=Tr.letExp(decList, finalExp), ty=finalTy}
 				end
 			| subTransExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = 
 				let
