@@ -154,7 +154,7 @@ struct
 			(print "seqExp\n";Ex (T.ESEQ(unNx e, unEx(seqExp es))))
 			
 	fun letExp ([], body) = (print "letExp\n";body)
-		| letExp (decs, body) = (print "letExp\n";Ex (T.ESEQ( seq(map unNx decs), unEx body)))
+		| letExp (decs, body) = (print "letExp\n";Ex (T.ESEQ(seq(map unNx decs), unEx body)))
 	
 	fun breakExp b = 
 		(print "breakExp\n";

@@ -7,7 +7,7 @@ sig
 	
 	val transVar: venv * tenv * Absyn.var * Translate.level -> expty 
 	val	transExp: venv * tenv * Absyn.exp * Translate.level -> expty 
-	val	transDec: venv * tenv * Absyn.dec * Translate.level -> {venv: venv, tenv: tenv} 
+	val	transDec: venv * tenv * Absyn.dec * Translate.level * Translate.exp list-> {venv: venv, tenv: tenv, transExpList: Translate.exp list} 
 	val	transTy: tenv * Absyn.ty -> Types.ty 
 		
 	val	transProg: Absyn.exp -> {frags: MIPSFrame.frag list, ty: Types.ty}
@@ -316,25 +316,32 @@ struct
 				end
 			| subTransExp (A.LetExp {decs=decs, body=body, pos=pos}) =
 				let
-					fun extractDec (venv,tenv,decs) = 
-						(case decs of
-							[] => {venv=venv, tenv=tenv}
-							| (dec::l) =>
-								let
-									val {venv=newVenv, tenv=newTenv} = transDec(venv,tenv,dec, level)
-								in
-									extractDec(newVenv, newTenv, l)
-								end)
-					fun translateDecs (vnv, tnv, [], decList) = decList
+					fun extractDec (venv,tenv,decs, tExpList) = 
+						(
+							case decs of
+								[] => {venv=venv, tenv=tenv, transExpList=tExpList}
+								| (dec::l) =>
+									let
+										val {venv=newVenv, tenv=newTenv, transExpList=newTExpList} = transDec(venv,tenv,dec, level, tExpList)
+									in
+										extractDec(newVenv, newTenv, l, newTExpList)
+									end
+						)
+
+					(*fun translateDecs (vnv, tnv, [], decList) = decList
 						| translateDecs (vnv, tnv, (dec::l), decList) =
-							(case (dec) of
-								 A.VarDec({name=name, escape=escape, typ=typ, init=init, pos=pos}) => translateDecs(vnv, tnv, l, (#exp (transExp(vnv, tnv, init, level)))::decList)
-								 | _ => translateDecs(vnv, tnv, l, decList))
-					val {venv=finalVenv, tenv=finalTenv} = extractDec(venv,tenv,decs)
-					val {exp=finalExp, ty=finalTy} = transExp(finalVenv, finalTenv, body,level)
-					val decList = translateDecs(finalVenv, finalTenv, decs, [])
+							(
+								case (dec) of
+									A.VarDec({name=name, escape=escape, typ=typ, init=init, pos=pos}) => translateDecs(vnv, tnv, l, (#exp (transExp(vnv, tnv, init, level)))::decList)
+									| _ => translateDecs(vnv, tnv, l, decList)
+							)*)
+
+					val {venv=finalVenv, tenv=finalTenv, transExpList=finalExpList} = extractDec(venv, tenv, decs, [])
+					val {exp=finalExp, ty=finalTy} = transExp(finalVenv, finalTenv, body, level)
+					(*val decList = translateDecs(finalVenv, finalTenv, decs, [])*)
 				in
-					{exp=Tr.letExp(decList, finalExp), ty=finalTy}
+					(*{exp=Tr.letExp(decList, finalExp), ty=finalTy}*)
+					{exp=Tr.letExp(finalExpList, finalExp), ty=finalTy}
 				end
 			| subTransExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = 
 				let
@@ -401,7 +408,7 @@ struct
 			subTransVar var
 		end
 
-	and transDec(venv,tenv,dec,level) = 
+	and transDec(venv, tenv, dec, level, tExpList) = 
 		let 
 			fun subTransDec (A.FunctionDec funcs) = 
 				(let
@@ -455,44 +462,45 @@ struct
 				in
 					(processBody(venv', funcs);
 					if funNoRepeatName(funcs) then
-						{venv = venv', tenv=tenv}
+						{venv = venv', tenv=tenv, transExpList=tExpList}
 					else
-						(Er.error 0 ("Functions with same name exist in mutually recursive environment");{venv = venv, tenv=tenv}))
+						(Er.error 0 ("Functions with same name exist in mutually recursive environment");{venv = venv, tenv=tenv, transExpList=tExpList}))
 				end)
 			| subTransDec (A.VarDec {name=name, escape=escape, typ=typ, init=init, pos=pos}) = 
 				let 
 					val {exp=varExp, ty=varTy} = transExp(venv,tenv,init,level)
 					val accessLevel = Tr.allocLocal level (!escape)
+					val newTransExpList = Tr.assignExp(Tr.simpleVar(accessLevel, level), varExp)::tExpList
 				in
 					(case varTy of
 						T.NIL =>
 							( case typ of
-								NONE => ((Er.error pos "No initial type to assign VALUE to ");{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv})
+								NONE => ((Er.error pos "No initial type to assign VALUE to ");{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv,transExpList=newTransExpList})
 								| SOME ((t,p)) => 
 									(case S.look(tenv,t) of
 										SOME(tyyy) =>
 											(case (actual_ty(tyyy,p)) of
 												T.RECORD(_,_) => 
-													({venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=actual_ty(tyyy,p)})),tenv=tenv})
+													({venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=actual_ty(tyyy,p)})),tenv=tenv,transExpList=newTransExpList})
 												| _ => 
-													((Er.error pos "NIL type of assigned value not constrained by RECORD type ");{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv}))
+													((Er.error pos "NIL type of assigned value not constrained by RECORD type ");{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv,transExpList=newTransExpList}))
 										| NONE => 
-											((Er.error pos "NIL type of assigned value cannot be constrained by undefined variable type");{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv})
+											((Er.error pos "NIL type of assigned value cannot be constrained by undefined variable type");{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv,transExpList=newTransExpList})
 											))
 						| _ =>
 							((case typ of
-								NONE=> ({venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv})
+								NONE=> ({venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv,transExpList=newTransExpList})
 								| SOME((t,p)) =>
 									(case S.look(tenv,t) of
 										SOME(tyyy) =>
 											if varTy = actual_ty(tyyy,p) 
 											then
-												({venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=tyyy})),tenv=tenv})
+												({venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=tyyy})),tenv=tenv,transExpList=newTransExpList})
 											else 
 												(
-												((Er.error pos ("TYPE mismatch between variable type and intilization value type "));{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv}))
+												((Er.error pos ("TYPE mismatch between variable type and intilization value type "));{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv,transExpList=newTransExpList}))
 										| NONE =>
-											((Er.error pos "Type of variable is undefined");{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv})))))
+											((Er.error pos "Type of variable is undefined");{venv=S.enter(venv,name,E.VarEntry({access=accessLevel, ty=varTy})),tenv=tenv,transExpList=newTransExpList})))))
 				end
 			| subTransDec (A.TypeDec decs) = 
 				let
@@ -524,14 +532,14 @@ struct
 							if detectTypeCycle(types) then 
 								(
 									if typeNoRepeatName(types) then 
-										{venv = venv, tenv = tenv''}
+										{venv = venv, tenv = tenv'', transExpList=tExpList}
 									else 
 										(
 										(Er.error 0 "Types with same name exist in mutually recursive enviornment");
-										{venv = venv, tenv = tenv})
+										{venv = venv, tenv = tenv, transExpList=tExpList})
 								) 
 							else 
-								{venv = venv, tenv = tenv}
+								{venv = venv, tenv = tenv, transExpList=tExpList}
 						end			
 				in
 					processTypes(tenv, decs)
