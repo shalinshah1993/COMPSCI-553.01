@@ -33,8 +33,7 @@ struct
 				val {frags:MIPSFrame.frag list, ty:Types.ty} = Sem.transProg ast
 			in
 				(PrintAbsyn.print(outfile, ast);
-				printFrags(frags);
-				print "Done!\n")
+				printFrags(frags))
 			end
 		end
 end

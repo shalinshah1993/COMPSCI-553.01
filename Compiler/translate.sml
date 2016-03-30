@@ -119,45 +119,43 @@ struct
 		let
 			val label = Te.newlabel()
 		in
-			"stringExp\n";
 			(fraglist := F.STRING(label, lit)::(!fraglist);
 			Ex (T.NAME label))
 		end
 	
-	fun intExp(n) = (print "intExp\n";Ex(T.CONST n))
+	fun intExp(n) = (Ex(T.CONST n))
 	
-	fun nilExp () = (print "nilExp\n";Ex (T.CONST 0))
+	fun nilExp () = (Ex (T.CONST 0))
 	
-	fun intArithExp (A.PlusOp, left, right) = (print "intArithExp\n";Ex(T.BINOP(T.PLUS, unEx(left), unEx(right))))
-		| intArithExp (A.MinusOp, left, right) = (print "intArithExp\n";Ex(T.BINOP(T.MINUS, unEx(left), unEx(right))))
-		| intArithExp (A.TimesOp, left, right) = (print "intArithExp\n";Ex(T.BINOP(T.MUL, unEx(left), unEx(right))))
-		| intArithExp (A.DivideOp, left, right) = (print "intArithExp\n";Ex(T.BINOP(T.DIV, unEx(left), unEx(right))))
-		| intArithExp (A.LtOp, left, right) = (print "intArithExp\n";Cx(fn(t,f) => T.CJUMP(T.LT, unEx(left), unEx(right), t, f)))
-		| intArithExp (A.LeOp, left, right) = (print "intArithExp\n";Cx(fn(t,f) => T.CJUMP(T.LE, unEx(left), unEx(right), t, f)))
-		| intArithExp (A.GtOp, left, right) = (print "intArithExp\n";Cx(fn(t,f) => T.CJUMP(T.GT, unEx(left), unEx(right), t, f)))
-		| intArithExp (A.GeOp, left, right) = (print "intArithExp\n";Cx(fn(t,f) => T.CJUMP(T.GE, unEx(left), unEx(right), t, f)))
-		| intArithExp (A.EqOp, left, right) = (print "intArithExp\n";Cx(fn(t,f) => T.CJUMP(T.EQ, unEx(left), unEx(right), t, f)))
-		| intArithExp (A.NeqOp, left, right) = (print "intArithExp\n";Cx(fn(t,f) => T.CJUMP(T.NE, unEx(left), unEx(right), t, f)))
+	fun intArithExp (A.PlusOp, left, right) = (Ex(T.BINOP(T.PLUS, unEx(left), unEx(right))))
+		| intArithExp (A.MinusOp, left, right) = (Ex(T.BINOP(T.MINUS, unEx(left), unEx(right))))
+		| intArithExp (A.TimesOp, left, right) = (Ex(T.BINOP(T.MUL, unEx(left), unEx(right))))
+		| intArithExp (A.DivideOp, left, right) = (Ex(T.BINOP(T.DIV, unEx(left), unEx(right))))
+		| intArithExp (A.LtOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.LT, unEx(left), unEx(right), t, f)))
+		| intArithExp (A.LeOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.LE, unEx(left), unEx(right), t, f)))
+		| intArithExp (A.GtOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.GT, unEx(left), unEx(right), t, f)))
+		| intArithExp (A.GeOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.GE, unEx(left), unEx(right), t, f)))
+		| intArithExp (A.EqOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.EQ, unEx(left), unEx(right), t, f)))
+		| intArithExp (A.NeqOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.NE, unEx(left), unEx(right), t, f)))
 		
 	fun assignExp (v, e) =
 		let
 			val vEx = unEx v
 			val eEx = unEx e
 		in
-			print "assignExp\n";
 			Nx(T.MOVE(vEx, eEx)) (*MOVE stores right in left, don't want result*)
 		end
 		
-	fun seqExp [] = (print "seqExp\n";Ex (T.CONST 0))
-		| seqExp [e] = (print "seqExp\n";e)
+	fun seqExp [] = (Ex (T.CONST 0))
+		| seqExp [e] = (e)
 		| seqExp (e::es) =
-			(print "seqExp\n";Ex (T.ESEQ(unNx e, unEx(seqExp es))))
+			(Ex (T.ESEQ(unNx e, unEx(seqExp es))))
 			
-	fun letExp ([], body) = (print "letExp\n";body)
-		| letExp (decs, body) = (print "letExp\n";Ex (T.ESEQ(seq(map unNx decs), unEx body)))
+	fun letExp ([], body) = (body)
+		| letExp (decs, body) = (Ex (T.ESEQ(seq(map unNx decs), unEx body)))
 	
 	fun breakExp b = 
-		(print "breakExp\n";
+		(
 		Nx (T.JUMP(T.NAME(b), [b])))
 	
 	fun ifExp (e1, e2) =
@@ -168,7 +166,6 @@ struct
 			val rTemp = Te.newtemp()
 
 		in
-			print "ifExp\n";
 			case (e2) of
 				(Cx genstm) =>
 					Cx (fn (t,f) =>
@@ -198,7 +195,6 @@ struct
 			val rTemp = Te.newtemp()
 		in
 			(* Remember, both e2 and e3 are of same types -> Will throw warnings, but how to print errors without pos? *)
-			print "ifElseExp\n";
 			case (e2, e3) of 
 				(Cx e2C, Cx e3C) =>
 					Cx (fn (t,f) =>
@@ -236,7 +232,6 @@ struct
 			val bodyLabel = Te.newlabel()
 			val forLabel = Te.newlabel()
 		in
-			print "forExp\n";
 			Nx(seq[T.MOVE(varExp, loExp),
 					T.CJUMP(T.LE, varExp, hiExp, bodyLabel, escape),
 					T.LABEL bodyLabel,
@@ -256,7 +251,6 @@ struct
 			val bodyLabel = Te.newlabel()
 			val doneLabel = Te.newlabel()
 		in
-			print "whileExp\n";
 			Nx (seq[T.LABEL testLabel,
 				testExp (bodyLabel, doneLabel),
 				T.LABEL bodyLabel,
@@ -269,7 +263,7 @@ struct
 		let
 			 val startAdd = T.TEMP(Te.newtemp())
 		in
-			print "arrayExp\n";
+
 			Ex (T.ESEQ(T.MOVE(startAdd, F.externalCall("initArray", [unEx(length), unEx(initVal)])), startAdd))
 		end
 
@@ -282,7 +276,6 @@ struct
 			| initFields(first::rest, result, curOffset, labelR):T.stm list = 
 				initFields(rest, [(T.MOVE(T.MEM(T.BINOP(T.PLUS, (labelR), T.BINOP(T.MUL, T.CONST(curOffset), T.CONST(F.wordSize)))), unEx(first)))] @ result, curOffset + 1, labelR)
 		in
-			print "recordExp\n";
 			Ex (T.ESEQ(seq 
 					[T.MOVE(r, F.externalCall("malloc", [T.BINOP(T.MUL, T.CONST(length), T.CONST(F.wordSize))])), 
 					seq(initFields(fields, [], 0, r))], 
@@ -290,7 +283,7 @@ struct
 		end
 
 	fun callExp(level, label, formals) = 
-		(print "callExp\n";
+		(
 		Ex(T.CALL(T.NAME(label), map unEx formals)))
 		
 	fun simpleVar ((defaultLevel, defaultAccess):access, level:level) =
@@ -302,7 +295,6 @@ struct
 				else
 					followStaticLinks(parent, F.exp(hd(F.formals frame)) (currentAccess))					
 		in
-			print "simpleVar\n";
 			Ex(followStaticLinks(level, T.TEMP(F.FP)))
 		end
 		
@@ -312,7 +304,6 @@ struct
 			val indexExp = unEx index
 			val offsetExp = T.BINOP(T.MUL, indexExp, T.CONST(F.wordSize))
 		in
-			print "indexedVar\n";
 			Ex (T.MEM(T.BINOP(T.PLUS, varExp, offsetExp)))
 		end
 		
