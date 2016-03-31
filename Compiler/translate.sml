@@ -22,6 +22,7 @@ sig
 	val stringExp : string -> exp
 	val nilExp : unit -> exp
 	val intArithExp : (Absyn.oper * exp * exp) -> exp
+	val strArithExp : (Absyn.oper * exp * exp) -> exp
 	val assignExp : (exp * exp) -> exp
 	val seqExp : (exp list) -> exp
 	val letExp : (exp list * exp) -> exp
@@ -137,6 +138,9 @@ struct
 		| intArithExp (A.GeOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.GE, unEx(left), unEx(right), t, f)))
 		| intArithExp (A.EqOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.EQ, unEx(left), unEx(right), t, f)))
 		| intArithExp (A.NeqOp, left, right) = (Cx(fn(t,f) => T.CJUMP(T.NE, unEx(left), unEx(right), t, f)))
+
+	fun strArithExp (A.EqOp, left, right) = Ex (F.externalCall("stringEqual", [unEx left, unEx right]))
+	| strArithExp (A.NeqOp, left, right) = Ex (T.BINOP(T.XOR, unEx (strArithExp(A.EqOp, left, right)), T.CONST(1)))
 		
 	fun assignExp (v, e) =
 		let
