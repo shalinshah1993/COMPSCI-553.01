@@ -162,32 +162,16 @@ struct
 		(
 		Nx (T.JUMP(T.NAME(b), [b])))
 	
-	fun ifExp (e1, e2) =
+	fun ifExp(e1, e2) = 
 		let
-			val e1Exp = unCx(e1)
-			val thenLabel = Te.newlabel()
-			val doneLabel = Te.newlabel()
-			val rTemp = Te.newtemp()
-
+		  val r = Te.newtemp()
+		  val t = Te.newlabel()
+		  val f = Te.newlabel()
 		in
-			case (e2) of
-				(Cx genstm) =>
-					Cx (fn (t,f) =>
-						seq[(e1Exp) (thenLabel, doneLabel),
-								T.LABEL thenLabel,
-								(unCx e2) (t,f),
-								T.LABEL doneLabel])
-				| (Nx s) =>
-					Nx (seq[(e1Exp) (thenLabel,doneLabel),
-								T.LABEL thenLabel,
-								unNx e2,
-								T.LABEL doneLabel])
-				| (Ex e) =>
-					Ex (T.ESEQ(seq[(e1Exp) (thenLabel,doneLabel),
-									T.LABEL thenLabel,
-									T.MOVE(T.TEMP rTemp, unEx e2),
-									T.LABEL doneLabel],
-								T.TEMP rTemp))
+		  Nx (seq[unCx (e1) (t, f),
+		                T.LABEL t,
+		                (unNx e2),
+		                T.LABEL f])
 		end
 		
 	fun ifElseExp (e1, e2, e3) =
