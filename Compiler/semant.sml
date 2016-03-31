@@ -167,10 +167,18 @@ struct
 							((Er.error pos ("Left OPERAND is not of type INT"));{exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=T.ERROR})
 						)
 					else if (oper=A.EqOp orelse oper=A.NeqOp) then
-						if assertSubTypes(leftType,rightType,pos,pos) then
-							{exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=actual_ty (leftType,pos)}
-						else
-							(Er.error pos "Type mismatch between left and right expressions of operand"; {exp=(Tr.intArithExp(oper,leftExp,rightExp)),ty=T.ERROR})
+						case leftType of 
+							T.STRING => 
+								if assertSubTypes(leftType,rightType,pos,pos) orelse assertSubTypes(rightType,leftType,pos,pos) then
+									{exp=(Tr.strArithExp(oper,leftExp,rightExp)), ty=T.STRING}
+								else
+									(Er.error pos "STRING Type mismatch between left and right expressions of operand"; {exp=(Tr.strArithExp(oper,leftExp,rightExp)),ty=T.ERROR})
+
+							| _ =>
+								if assertSubTypes(leftType,rightType,pos,pos) then
+									{exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=T.INT}
+								else
+									(Er.error pos "INT Type mismatch between left and right expressions of operand"; {exp=(Tr.intArithExp(oper,leftExp,rightExp)),ty=T.ERROR})
 					else
 						(Er.error pos "Could not discern the operator type"; {exp=(Tr.intArithExp(oper,leftExp,rightExp)), ty=T.ERROR})
 				end
@@ -262,7 +270,7 @@ struct
 								else
 									((Er.error pos "Type Mismatch between THEN and ELSE expressions");{exp=((Tr.ifElseExp((#exp testExp), (#exp realThenExp), (#exp realElseExp)))), ty=T.ERROR}))
 							else
-								((Er.error pos "TEST expression is not of type");{exp=((Tr.ifElseExp((#exp testExp), (#exp realThenExp), (#exp realElseExp)))), ty=T.ERROR})
+								((Er.error pos "TEST expression is not of type INT");{exp=((Tr.ifElseExp((#exp testExp), (#exp realThenExp), (#exp realElseExp)))), ty=T.ERROR})
 						end))
 			| subTransExp (A.WhileExp {test=test, body=body, pos=pos}) = 
 				let
