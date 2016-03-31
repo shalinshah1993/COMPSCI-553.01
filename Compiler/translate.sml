@@ -192,40 +192,20 @@ struct
 		
 	fun ifElseExp (e1, e2, e3) =
 		let
-			val e1Exp = unCx(e1)
-			val thenLabel = Te.newlabel()
-			val elseLabel = Te.newlabel()
-			val doneLabel = Te.newlabel()
-			val rTemp = Te.newtemp()
-		in
-			(* Remember, both e2 and e3 are of same types -> Will throw warnings, but how to print errors without pos? *)
-			case (e2, e3) of 
-				(Cx e2C, Cx e3C) =>
-					Cx (fn (t,f) =>
-						seq[(e1Exp) (thenLabel, elseLabel),
-								T.LABEL thenLabel,
-								(unCx e2) (t, f),
-								T.LABEL elseLabel,
-								(unCx e3) (t,f)])
-				| (Nx e2N, Nx e3N) =>
-					Nx (seq[(e1Exp) (thenLabel, elseLabel),
-								T.LABEL thenLabel,
-								unNx e2,
-								T.JUMP (T.NAME doneLabel, [doneLabel]),
-								T.LABEL elseLabel,
-								unNx e3,
-								T.LABEL doneLabel])
-				| (Ex e2E, Ex e3E) =>
-					Ex (T.ESEQ(seq[(e1Exp) (thenLabel, elseLabel),
-								T.LABEL thenLabel,
-								T.MOVE (T.TEMP rTemp, unEx e2),
-								T.JUMP (T.NAME doneLabel, [doneLabel]),
-								T.LABEL elseLabel,
-								T.MOVE (T.TEMP rTemp, unEx e3),
-								T.LABEL doneLabel],
-						T.TEMP rTemp))
-				| _ => (Er.error 0 "Both the expressions are not of the same type. Compiler Error!"; nilExp())
-		end
+			val r = Te.newtemp()
+			val t = Te.newlabel()
+			val f = Te.newlabel()
+			val join = Te.newlabel()
+    	in
+			Ex (T.ESEQ(seq[unCx (e1) (t, f),
+			            T.LABEL t,
+			            T.MOVE(T.TEMP r, unEx e2),
+			            T.JUMP(T.NAME(join), [join]),
+			            T.LABEL f,
+			            T.MOVE(T.TEMP r, unEx e3),
+			            T.LABEL join],
+			        T.TEMP r))
+    	end
 		
 	fun forExp (var, escape, lo, hi, body) =
 		let
