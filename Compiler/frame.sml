@@ -37,7 +37,38 @@ struct
 	val SP = Temp.newtemp()   (* Stack-pointer *)
 	val RA = Temp.newtemp()   (* Return address *)
 	val RV = Temp.newtemp()   (* Return value *)
-
+	
+	(* sys-call registers *)
+	val v0 = Temp.newtemp()
+	val v1 = Temp.newtemp()
+	
+	(* argument registers *)
+	val a0 = Temp.newtemp()
+	val a1 = Temp.newtemp()
+	val a2 = Temp.newtemp()
+	val a3 = Temp.newtemp()
+	
+	(* temp registers *)
+	val t0 = Temp.newtemp()
+	val t1 = Temp.newtemp()
+	val t2 = Temp.newtemp()
+	val t3 = Temp.newtemp()
+	val t4 = Temp.newtemp()
+	val t5 = Temp.newtemp()
+	val t6 = Temp.newtemp()
+	val t7 = Temp.newtemp()
+	val t8 = Temp.newtemp() (* Extra *)
+	val t9 = Temp.newtemp() (* Extra *)
+	
+	(* Saved registers *)
+	val s0 = Temp.newtemp()
+	val s1 = Temp.newtemp()
+	val s2 = Temp.newtemp()
+	val s3 = Temp.newtemp()
+	val s4 = Temp.newtemp()
+	val s5 = Temp.newtemp()
+	val s6 = Temp.newtemp()
+	val s7 = Temp.newtemp()
 	(* can store on register or in frame on memory *)
 	datatype access = InFrame of int 
 					| InReg of Tp.temp
