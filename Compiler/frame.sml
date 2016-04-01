@@ -69,6 +69,11 @@ struct
 	val s5 = Temp.newtemp()
 	val s6 = Temp.newtemp()
 	val s7 = Temp.newtemp()
+	
+	val calleesaves=[s0,s1,s2,s3,s4,s5,s6,s7]
+	
+	vale callersaves=[t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
+	
 	(* can store on register or in frame on memory *)
 	datatype access = InFrame of int 
 					| InReg of Tp.temp
@@ -112,6 +117,19 @@ struct
 
     (* Dummy implementation as described by Appel *)
     fun procEntryExit1(frame, body) = body
+	
+	fun procEntryExit2(frame, body) = 
+		body @
+			[A.OPER{assem="",
+				src=[ZO, RA, SP]@calleesaves,
+				dst=[],
+				jump=SOME[]}]
+				
+	(* Does this part still have JOUETTE in it? *)
+	fun procEntryExit3(FRAME{name, params,locals},body) =
+		{prolog="PROCEDURE " ^ Symbol.name name ^ "\n",
+		body=body,
+		epilog= "ED " ^ Symbol.name name ^ "\n"}
 
     fun externalCall(funcName, argList) = Tr.CALL(Tr.NAME(Tp.namedlabel(funcName)), argList)
 end
