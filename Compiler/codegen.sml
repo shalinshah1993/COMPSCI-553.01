@@ -93,7 +93,7 @@ struct
 					src=[munchExp e2],
 					dst=[t]})
 			| munchStm(T.EXP(e1))= (munchExp(e1);())
-				
+
 			(* Same ORDER as TREE structure for ass code pattern *)
 			and munchExp(T.MEM(T.BINOP(T.PLUS,e1,T.CONST i))) = 
 				result(fn r => esmit(A.OPER
@@ -216,6 +216,21 @@ struct
 					src=[],
 					dst=[r],
 					jump=NONE}))
+			| munchExp(T.CALL(e, args))= 	
+				result(fn r => emit(A.OPER{
+					assem="jal "^S.name(e)^"\n",
+					src=munchArgs(0, args, 0),
+					dst=[F.RV],
+					jump=NONE}))
+			and munchArgs (i, [], offset) = []
+			| munchArgs(i, a::l, offset) = 
+				if i < 4 then
+					(munchStm(T.MOVE(T.TEMP(Temp.newtemp()), a));
+					argReg::munchArgs(i+1,l, offset))
+				else 
+					(T.MEM(T.BINOP(T.PLUS, T.TEMP(F.SP), T.CONST(offset)));
+					argReg::munchArgs(i+1,l, offset+4))
+
 		in
 			munchStm stm;
 			rev(!ilist)
