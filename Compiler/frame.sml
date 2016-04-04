@@ -29,6 +29,7 @@ struct
 	structure Tr = Tree
 	structure S = Symbol
 	structure Tp = Temp
+	structure A = Assem
 
 	val wordSize = 4
 
@@ -72,7 +73,7 @@ struct
 	
 	val calleesaves=[s0,s1,s2,s3,s4,s5,s6,s7]
 	
-	vale callersaves=[t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
+	val callersaves=[t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
 	
 	(* can store on register or in frame on memory *)
 	datatype access = InFrame of int 
@@ -126,7 +127,7 @@ struct
 				jump=SOME[]}]
 				
 	(* Does this part still have JOUETTE in it? *)
-	fun procEntryExit3(FRAME{name, params,locals},body) =
+	fun procEntryExit3({name=name, formals=params,offset=locals}:frame, body: Assem.instr list) =
 		{prolog="PROCEDURE " ^ Symbol.name name ^ "\n",
 		body=body,
 		epilog= "ED " ^ Symbol.name name ^ "\n"}

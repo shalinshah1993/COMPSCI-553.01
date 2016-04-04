@@ -24,6 +24,13 @@ frame.sml
 temp.sig
 temp.sml
 
+canon.sml 
+flowgraph.sml
+graph.sig
+graph.sml
+assem.sml
+
+
 main.sml
 
 $/basis.cm
