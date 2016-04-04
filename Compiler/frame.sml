@@ -15,12 +15,19 @@ sig
 	val exp : access -> Tree.exp -> Tree.exp
 
 	val RV : Temp.temp
+	val ZO : Temp.temp
+	val SP : Temp.temp
+	val RA : Temp.temp
 	val procEntryExit1 : frame * Tree.stm -> Tree.stm
 
 	val externalCall: string * Tree.exp list -> Tree.exp
 
 	datatype frag = PROC of {body: Tree.stm, frame: frame}
             | STRING of Temp.label * string
+			
+	val calleesaves : Temp.temp list
+	val callersaves : Temp.temp list
+	val argRegs : Temp.temp list
 end
 
 structure MIPSFrame :> FRAME 
@@ -74,6 +81,8 @@ struct
 	val calleesaves=[s0,s1,s2,s3,s4,s5,s6,s7]
 	
 	val callersaves=[t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
+	
+	val argRegs = [a0,a1,a2,a3]
 	
 	(* can store on register or in frame on memory *)
 	datatype access = InFrame of int 

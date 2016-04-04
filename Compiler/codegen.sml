@@ -1,6 +1,5 @@
 signature CODEGEN =
 sig
-	structure MIPSFrame : FRAME
 	val codegen : MIPSFrame.frame -> Tree.stm -> Assem.instr list
 end
 structure MIPSGen : CODEGEN =
@@ -9,9 +8,11 @@ struct
 	structure T = Tree
 	structure Tm = Temp
 	structure S = Symbol
+	structure F = MIPSFrame
 	fun codegen (frame) (stm: T.stm) : A.instr list =
 		let
-			fun emit x = ilist := x::!ilist
+			val ilist = ref (nil: A.instr list)
+			fun emit x = ilist := x::(!ilist)
 			fun result(gen) =
 				let 
 					val t = Tm.newtemp()
@@ -20,7 +21,7 @@ struct
 					t
 				end
 				
-			fun relopToAssem(T.relop relOp) =
+			fun relopToAssem(relOp : T.relop) =
 				case(relOp) of
 					T.EQ => "beq"
 					| T.NE => "bne"
@@ -33,20 +34,20 @@ struct
 			fun getBinopString (binOp) = 
 				case binOp of
 					 T.PLUS => "add"
-					| 	T.MINUS = "sub"
-					| 	T.MUL = "mul"
-					| 	T.DIV = "div"
-					| 	T.AND = "and"
-					| 	T.OR = "or"
-				    |   T.LSHIFT = "lshift"
-				    |   T.RSHIFT = "rshift"
-				    |   T.ARSHIFT = "arshift"
-				    |   T.XOR = "xor"
+					| 	T.MINUS => "sub"
+					| 	T.MUL => "mul"
+					| 	T.DIV => "div"
+					| 	T.AND => "and"
+					| 	T.OR => "or"
+				    |   T.LSHIFT => "lshift"
+				    |   T.RSHIFT => "rshift"
+				    |   T.ARSHIFT => "arshift"
+				    |   T.XOR => "xor"
 			
 			fun munchStm(T.SEQ(a,b)) = 
 				(munchStm a; munchStm b)
 			| munchStm(T.LABEL lab) =
-				emit(A.LABEL{assem=lab ^ ":\n", 
+				emit(A.LABEL{assem=S.name(lab) ^ ":\n", 
 				lab=lab})
 			| munchStm(T.JUMP(T.NAME(lab), labList)) =
 				emit(A.OPER{assem="j `j0\n",
@@ -57,29 +58,33 @@ struct
 				emit(A.OPER{assem="jr `j0\n",
 					src=[munchExp e1],
 					dst=[],
-					jump=SOME([labList])})
+					jump=SOME(labList)})
 			| munchStm(T.CJUMP(oper, e1, e2, trueLabel, falseLabel)) =
 				emit(A.OPER{assem=(relopToAssem(oper)) ^ " `s0, `s1, " ^ S.name(trueLabel) ^ "\n j " ^ S.name(falseLabel) ^ "\n",
 					src=[munchExp e1, munchExp e2],
 					dst=[],
 					jump=SOME([trueLabel, falseLabel])})
-			| munchStm(T.CJUMP(oper, T.CONST i, e1, trueLabel, falseLabel)) =
-				emit(A.OPER{assem=(relopToAssem(oper)) ^ " `s0," ^ int i ^", " ^ S.name(trueLabel) ^ "\n j " ^ S.name(falseLabel) ^ "\n",
+			(*| munchStm(T.CJUMP(oper, T.CONST i, e1, trueLabel, falseLabel)) =
+				emit(A.OPER{assem=(relopToAssem(oper)) ^ " `s0," ^ Int.toString i ^", " ^ S.name(trueLabel) ^ "\n j " ^ S.name(falseLabel) ^ "\n",
 					src=[munchExp e1],
 					dst=[],
 					jump=SOME([trueLabel, falseLabel])})
+					
+					Match redundant
+					
+					*)
 			| munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i)), e2))=
-				emit(A.OPER{assem="sw `s0, (`s1+" ^ int i ^ ")\n",
+				emit(A.OPER{assem="sw `s0, (`s1+" ^ Int.toString i ^ ")\n",
 					src=[munchExp e1, munchExp e2],
 					dst=[],
 					jump=NONE})
 			| munchStm(T.MOVE(T.MEM(T.BINOP(T.MINUS, e1, T.CONST i)),e2))=
-				emit(A.OPER{assem="sw `s0, (`s1~" ^ int i ^ ")\n",
+				emit(A.OPER{assem="sw `s0, (`s1~" ^ Int.toString i ^ ")\n",
 					src=[munchExp e1, munchExp e2],
 					dst=[],
 					jump=NONE})
 			| munchStm(T.MOVE(T.MEM(T.CONST i), e1))=
-				emit(A.OPER{assem="sw `s0,(`r0+" ^ int i ^ ")\n",
+				emit(A.OPER{assem="sw `s0,(`r0+" ^ Int.toString i ^ ")\n",
 					src=[munchExp e1],
 					dst=[],
 					jump=NONE})
@@ -91,102 +96,103 @@ struct
 			| munchStm(T.MOVE(T.TEMP t, e2))=
 				emit(A.OPER{assem="move `d0, `s0\n",
 					src=[munchExp e2],
-					dst=[t]})
+					dst=[t],
+					jump=NONE})
 			| munchStm(T.EXP(e1))= (munchExp(e1);())
 
 			(* Same ORDER as TREE structure for ass code pattern *)
 			and munchExp(T.MEM(T.BINOP(T.PLUS,e1,T.CONST i))) = 
-				result(fn r => esmit(A.OPER
-					{assem="add `d0, "^ intToString(i) ^ ", `s0\n",
+				result(fn r => emit(A.OPER
+					{assem="add `d0, "^ Int.toString(i) ^ ", `s0\n",
 					src=[munchExp e1],
 					dst=[r],
 					jump=NONE}))
 			| munchExp(T.MEM(T.BINOP(T.PLUS, T.CONST i, e1))) =
 				result(fn r => emit(A.OPER
-					{assem="add `d0, "^ intToString(i) ^ ", `s0\n",
+					{assem="add `d0, "^ Int.toString(i) ^ ", `s0\n",
 					src=[munchExp e1],
 					dst=[r],
 					jump=NONE}))
 			| munchExp(T.MEM(T.CONST i)) =
 				result(fn r => emit(A.OPER
-					{assem="lw `d0, (r0  + " ^ int i ^ ")\n",
+					{assem="lw `d0, (r0  + " ^ Int.toString i ^ ")\n",
 					src=[],
 					dst=[r],
 					jump=NONE}))
 			(* ZERO is identity for ADD/SUB *)
 			| munchExp(T.BINOP(T.PLUS, T.CONST 0, T.CONST i)) =
             	result(fn r => emit(A.OPER 
-            		{assem = "addi `d0, `s0, " ^ intToString i ^ "\n",
-                    src = [F.ZERO], 
+            		{assem = "addi `d0, `s0, " ^ Int.toString i ^ "\n",
+                    src = [F.ZO], 
                     dst = [r], 
                     jump = NONE}))
         	| munchExp(T.BINOP(T.PLUS, T.CONST i, T.CONST 0)) =
             	result(fn r => emit(A.OPER 
-            		{assem = "addi `d0, `s0, " ^ intToString i ^ "\n",
-                    src = [F.ZERO], 
+            		{assem = "addi `d0, `s0, " ^ Int.toString i ^ "\n",
+                    src = [F.ZO], 
                     dst = [r], 
                     jump = NONE}))
         	| munchExp(T.BINOP(T.MINUS, T.CONST 0, T.CONST i)) =
             	result(fn r => emit(A.OPER 
-            		{assem = "addi `d0, `s0, " ^ intToString (~i) ^ "\n",
-                    src = [F.ZERO], 
+            		{assem = "addi `d0, `s0, " ^ Int.toString (~i) ^ "\n",
+                    src = [F.ZO], 
                     dst = [r], 
                     jump = NONE}))
         	| munchExp(T.BINOP(T.MINUS, T.CONST i, T.CONST 0)) =
             	result(fn r => emit(A.OPER 
-            		{assem = "addi `d0, `s0, " ^ intToString (~i) ^ "\n",
-                    src = [F.ZERO], 
+            		{assem = "addi `d0, `s0, " ^ Int.toString (~i) ^ "\n",
+                    src = [F.ZO], 
                     dst = [r], 
                     jump = NONE}))
 			(* ADDITION is COMMUTATIVE *)
 			| munchExp(T.BINOP(T.PLUS,e1,T.CONST i)) =
-				result(rn r => emit(A.OPER
-					{assem="addi `d0, `s0, " ^ intToString i ^ "\n",
+				result(fn r => emit(A.OPER
+					{assem="addi `d0, `s0, " ^ Int.toString i ^ "\n",
 					src=[munchExp e1],
 					dst=[r],
 					jump=NONE}))
 			| munchExp(T.BINOP(T.PLUS,T.CONST i,e1)) =
 				result(fn r => emit(A.OPER
-					{assem="addi `d0, `s0, " ^ intToString i ^ "\n",
+					{assem="addi `d0, `s0, " ^ Int.toString i ^ "\n",
 					src=[munchExp e1],
 					dst=[r],
 					jump=NONE}))
 			(* AND is COMUTATIVE *)
 			| munchExp(T.BINOP(T.AND, e1, T.CONST i)) =
         		result(fn r => emit(A.OPER 
-		        	{assem="andi `d0, `s0, " ^ intToString i ^ "\n",
+		        	{assem="andi `d0, `s0, " ^ Int.toString i ^ "\n",
 					src=[munchExp e1], 
 					dst=[r], 
 					jump=NONE}))
     		| munchExp(T.BINOP(T.AND, T.CONST i, e1)) =
     			result(fn r => emit(A.OPER 
-    				{assem="andi `d0, `s0, " ^ intToString i ^ "\n",
+    				{assem="andi `d0, `s0, " ^ Int.toString i ^ "\n",
 					src=[munchExp e1], 
 					dst=[r], 
 					jump=NONE}))
         	(* OR is COMMUTATIVE *)
         	| 	munchExp(T.BINOP(T.OR, e1, T.CONST i)) =
          		result(fn r => emit(A.OPER 
-         			{assem="ori `d0, `s0, " ^ intToString i ^ "\n",
+         			{assem="ori `d0, `s0, " ^ Int.toString i ^ "\n",
 					src=[munchExp e1], 
 					dst=[r], 
 					jump=NONE}))
 	        | munchExp(T.BINOP(T.OR, T.CONST i, e1)) =
             	result(fn r => emit(A.OPER 
-	            	{assem="ori `d0, `s0, " ^ intToString i ^ "\n",
+	            	{assem="ori `d0, `s0, " ^ Int.toString i ^ "\n",
 					src=[munchExp e1], 
 					dst=[r], 
 					jump=NONE}))
             (* XOR is COMMUTATIVE *)
         	| munchExp(T.BINOP(T.XOR, e1, T.CONST i)) =
          		result(fn r => emit(A.OPER 
-         			{assem="xori `d0, `s0, " ^ intToString i ^ "\n",
+         			{assem="xori `d0, `s0, " ^ Int.toString i ^ "\n",
 					src=[munchExp e1], 
 					dst=[r], 
 					jump=NONE}))
 	        | munchExp(T.BINOP(T.XOR, T.CONST i, e1)) =
             	result(fn r => emit(A.OPER 
-	            	{assem="xori `d0, `s0, " ^ intToString i ^ "\n",
+	            	{assem="xori `d0, `s0, " ^ Int.toString i ^ "\n",
 					src=[munchExp e1], 
 					dst=[r], 
 					jump=NONE}))
@@ -206,31 +212,35 @@ struct
 			| munchExp (T.ESEQ(_, _)) = ErrorMsg.impossible "Error! ESEQ should be removed during Tree linearlization"
 			|munchExp(T.NAME label) = 
 				result(fn r => emit(A.OPER 
-					{assem=("la `d0, " ^ S.name(l) ^ "\n"),
+					{assem=("la `d0, " ^ S.name(label) ^ "\n"),
 					src=[], 
 					dst=[r], 
 					jump=NONE}))
 			| munchExp(T.CONST i) =
 				result(fn r => emit(A.OPER
-					{assem="li `d0, " ^ int i ^ "\n",
+					{assem="li `d0, " ^ Int.toString i ^ "\n",
 					src=[],
 					dst=[r],
 					jump=NONE}))
-			| munchExp(T.CALL(e, args))= 	
+			| munchExp(T.CALL(T.NAME(e), args))= 	
 				result(fn r => emit(A.OPER{
 					assem="jal "^S.name(e)^"\n",
 					src=munchArgs(0, args, 0),
 					dst=[F.RV],
-					jump=NONE}))
-			and munchArgs (i, [], offset) = []
-			| munchArgs(i, a::l, offset) = 
+					jump=NONE}))					
+			and munchArgs(i, [], offset) = []
+			| munchArgs(i, a::l, offset) =
 				if i < 4 then
-					(munchStm(T.MOVE(T.TEMP(Temp.newtemp()), a));
-					argReg::munchArgs(i+1,l, offset))
-				else 
-					(T.MEM(T.BINOP(T.PLUS, T.TEMP(F.SP), T.CONST(offset)));
-					argReg::munchArgs(i+1,l, offset+4))
-
+					let
+						val newReg = List.nth(F.argRegs, i)
+					in
+						(emit(A.MOVE{assem="move `a" ^ Int.toString(i) ^ ", (`s0+0)\n",
+						src=munchExp (a),
+						dst=newReg});
+						newReg::munchArgs(i+1, l, offset))
+					end
+				else
+					munchArgs(i+1, l, offset+4);			
 		in
 			munchStm stm;
 			rev(!ilist)

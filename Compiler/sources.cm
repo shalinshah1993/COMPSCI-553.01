@@ -24,6 +24,7 @@ frame.sml
 temp.sig
 temp.sml
 
+codegen.sml
 canon.sml 
 flowgraph.sml
 graph.sig
