@@ -73,7 +73,13 @@ struct
 					Match redundant
 					
 					*)
+			(* ADD is COMMUTATIVE *)
 			| munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i)), e2))=
+				(emit(A.OPER{assem="sw `s0, (`s1+" ^ Int.toString i ^ ")\n",
+					src=[munchExp e1, munchExp e2],
+					dst=[],
+					jump=NONE}))
+			| munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, T.CONST i, e1)), e2))=
 				(emit(A.OPER{assem="sw `s0, (`s1+" ^ Int.toString i ^ ")\n",
 					src=[munchExp e1, munchExp e2],
 					dst=[],
@@ -98,6 +104,11 @@ struct
 					src=[munchExp e2],
 					dst=[t],
 					jump=NONE}))
+			(* Both the MOVE are without registers *)
+			| munchStm(T.MOVE(e1, e2))=
+				(emit(A.MOVE {assem = "move `d0, `s0\n",
+                      src = munchExp(e2),
+                      dst = munchExp(e1)}))
 			| munchStm(T.EXP(e1))= ((munchExp(e1);()))
 
 			(* Same ORDER as TREE structure for ass code pattern *)
@@ -210,7 +221,7 @@ struct
 					jump=NONE})))
 			| munchExp(T.TEMP t) = (t)
 			| munchExp (T.ESEQ(_, _)) = ErrorMsg.impossible "Error! ESEQ should be removed during Tree linearlization"
-			|munchExp(T.NAME label) = 
+			| munchExp(T.NAME label) = 
 				(result(fn r => emit(A.OPER 
 					{assem=("la `d0, " ^ S.name(label) ^ "\n"),
 					src=[], 
