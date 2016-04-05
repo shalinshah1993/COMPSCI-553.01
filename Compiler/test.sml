@@ -27,7 +27,7 @@ let
                         "test23.tig",
                         "test24.tig",
                         "test25.tig",
-                        "test26.tig",
+                        "test26.tig"(*,
                         "test27.tig",
                         "test28.tig",
                         "test29.tig",
@@ -50,9 +50,9 @@ let
 						"test46.tig",
 						"test47.tig",
 						"test48.tig",
-						"test49.tig"]
+						"test49.tig"*)]
     val testFiles = map (fn x=>testFilesFolder^x) testFileList
 in
-    map (fn x=>Main.runFile x) testFiles
+    map (fn x=>Main.compile x) testFiles
 end
 
