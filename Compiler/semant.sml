@@ -169,8 +169,8 @@ struct
 					else if (oper=A.EqOp orelse oper=A.NeqOp) then
 						case leftType of 
 							T.STRING => 
-								if assertSubTypes(leftType,rightType,pos,pos) orelse assertSubTypes(rightType,leftType,pos,pos) then
-									{exp=(Tr.strArithExp(oper,leftExp,rightExp)), ty=T.STRING}
+								if (assertSubTypes(leftType,rightType,pos,pos) orelse assertSubTypes(rightType,leftType,pos,pos)) then
+									{exp=(Tr.strArithExp(oper,leftExp,rightExp)), ty=T.INT}
 								else
 									(Er.error pos "STRING Type mismatch between left and right expressions of operand"; {exp=(Tr.strArithExp(oper,leftExp,rightExp)),ty=T.ERROR})
 

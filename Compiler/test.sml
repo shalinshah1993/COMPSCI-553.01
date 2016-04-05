@@ -50,7 +50,9 @@ let
 						"test46.tig",
 						"test47.tig",
 						"test48.tig",
-						"test49.tig"]
+						"test49.tig",
+                        "queens.tig",
+                        "merge.tig"]
     val testFiles = map (fn x=>testFilesFolder^x) testFileList
 in
     map (fn x=>Main.compile x) testFiles
