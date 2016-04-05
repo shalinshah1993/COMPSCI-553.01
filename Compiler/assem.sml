@@ -24,7 +24,7 @@ structure Assem = struct
 		  | f( #"`":: #"j":: i:: rest) = 
 		    (explode(saylab(List.nth(jump,ord i - ord #"0"))) @ f rest)
 		  | f( #"`":: #"`":: rest) = #"`" :: f rest
-		  | f( #"`":: _ :: rest) = ErrorMsg.impossible "bad Assem format"
+		  | f( #"`":: q :: rest) = (ErrorMsg.impossible "bad Assem format")
 		  | f(c :: rest) = (c :: f rest)
 		  | f nil = nil
 	    in implode(f(explode assem))
