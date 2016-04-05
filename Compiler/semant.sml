@@ -217,21 +217,15 @@ struct
 				end
 			| subTransExp (A.SeqExp exps) = 
 				let
-					fun subTransExps ([], translatedList) = {exp=Tr.seqExp(translatedList), ty=T.UNIT}
-					| subTransExps ([(exp,pos)], translatedList) = 
+					fun subTransExps ([], translatedList, curTy) = {exp=Tr.seqExp(translatedList), ty=curTy}
+					| subTransExps((exp, pos)::l, translatedList, curTy) = 
 						let
 							val {exp=transExp, ty=transTy} = transExp(venv,tenv,exp,level)
 						in
-							subTransExps([], transExp::translatedList)
-						end
-					| subTransExps((exp, pos)::l, translatedList) = 
-						let
-							val {exp=transExp, ty=transTy} = transExp(venv,tenv,exp,level)
-						in
-							subTransExps(l, transExp::translatedList)
+							subTransExps(l, transExp::translatedList, transTy)
 						end
 				in
-					subTransExps (exps, [])
+					subTransExps (exps, [], T.UNIT)
 				end
 			| subTransExp (A.AssignExp {var=var, exp=exp, pos=pos}) = 
 				let
@@ -454,7 +448,7 @@ struct
 							val {exp=bodyExp, ty=bodyTy} = transExp(venv', tenv, body,level)
 						in
 							(
-								if assertSubTypes(bodyTy, getReturnType(result), pos, pos) then
+								if (assertSubTypes(bodyTy, getReturnType(result), pos, pos)) then
 								(
 									if (assertSubTypes(getReturnType(result), T.UNIT, pos, pos) andalso assertSubTypes(bodyTy, T.UNIT, pos, pos) <> true) then
 										(Er.error pos ("Function body should be of type T.UNIT"))
