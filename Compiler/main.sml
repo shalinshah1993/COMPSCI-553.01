@@ -9,10 +9,10 @@ structure Main = struct
 
   fun emitproc out (F.PROC{body,frame}) =
     let 
-      val _ = print ("emit " ^ S.name(F.name frame) ^ "\n")
-      val _ = Printtree.printtree(out,body)
+      (*val _ = print ("emit " ^ S.name(F.name frame) ^ "\n")*)
+      (*val _ = Printtree.printtree(out,body)*)
       val stms = Canon.linearize body
-      val _ = app (fn s => Printtree.printtree(out,s)) stms
+      (*val _ = app (fn s => Printtree.printtree(out,s)) stms*)
       val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
       val instrs =   List.concat(map (MIPSGen.codegen frame) stms') 
       val format0 = Assem.format(Temp.makestring)
