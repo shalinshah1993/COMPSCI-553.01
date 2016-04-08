@@ -2,6 +2,7 @@ signature FRAME =
 sig 
 	type frame
 	val wordSize : int
+
 	datatype register = Reg of string
   	datatype access = InFrame of int
                   | InReg of Temp.temp
@@ -12,13 +13,8 @@ sig
 	val formals : frame -> access list
 	val allocLocal : frame -> bool -> access
 
-	val FP : Temp.temp
 	val exp : access -> Tree.exp -> Tree.exp
 
-	val RV : Temp.temp
-	val zero : Temp.temp
-	val SP : Temp.temp
-	val RA : Temp.temp
 	val procEntryExit1 : frame * Tree.stm -> Tree.stm
 
 	val externalCall: string * Tree.exp list -> Tree.exp
@@ -26,10 +22,19 @@ sig
 	datatype frag = PROC of {body: Tree.stm, frame: frame}
             | STRING of Temp.label * string
 			
+	val zero : Temp.temp
+    val FP : Temp.temp    
+    val SP : Temp.temp
+    val RV : Temp.temp
+    val RA : Temp.temp
+
 	val specialArgs : Temp.temp list
 	val calleeSave : Temp.temp list
 	val callerSave : Temp.temp list
 	val argRegs : Temp.temp list
+	
+	val tempMap: register Temp.Table.table
+	val getTempString: Temp.temp -> string
 end
 
 structure MIPSFrame :> FRAME 
@@ -93,6 +98,15 @@ struct
 	val argRegs = [a0,a1,a2,a3]
 	val calleeSave = [s0,s1,s2,s3,s4,s5,s6,s7]
 	val callerSave = [t0,t1,t2,t3,t4,t5,t6,t7]
+
+	(* As per Appel, return NONE for everything except special regs using tempMap definition *)
+	val specialRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0"))]
+	val tempMap = foldr (fn ((temp, regEntry), table) => Tp.Table.enter(table, temp, regEntry)) Tp.Table.empty specialRegList
+	
+	fun getTempString(temp) =
+		case Tp.Table.look(tempMap, temp) of 
+		  	NONE => Tp.makestring(temp)
+		    | SOME(Reg(regName)) => regName
 	
 	(* can store on register or in frame on memory *)
 	datatype access = InFrame of int 
