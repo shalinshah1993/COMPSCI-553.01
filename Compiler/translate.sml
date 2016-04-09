@@ -250,9 +250,7 @@ struct
 					r))
 		end
 
-	fun callExp(level, label, formals) = 
-		(
-		Ex(T.CALL(T.NAME(label), map unEx formals)))
+	fun callExp(level, label, formals) = (Ex(T.CALL(T.NAME(label), map unEx formals)))
 		
 	fun simpleVar ((defaultLevel, defaultAccess):access, level:level) =
 		let
@@ -262,6 +260,7 @@ struct
 					F.exp(defaultAccess) (currentAccess)
 				else
 					followStaticLinks(parent, F.exp(hd(F.formals frame)) (currentAccess))					
+			| followStaticLinks(_, _) = Er.impossible "Trying to reach static link but reached BASE"
 		in
 			Ex(followStaticLinks(level, T.TEMP(F.FP)))
 		end
