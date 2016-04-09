@@ -66,7 +66,7 @@ struct
 	
 	val outermost = Base
 	
-	fun newLevel({parent=parent, name=name, formals=formals}) = Level({frame=F.newFrame{name=name, formals=formals}, parent=parent}, ref ())
+	fun newLevel({parent=parent, name=name, formals=formals}) = Level({frame=F.newFrame{name=name, formals=true::formals}, parent=parent}, ref ())
 	
 	fun formals inputLevel =
 		case inputLevel of
