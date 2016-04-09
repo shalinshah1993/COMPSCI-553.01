@@ -158,9 +158,7 @@ struct
 	fun letExp ([], body) = (body)
 		| letExp (decs, body) = (Ex (T.ESEQ(seq(map unNx decs), unEx body)))
 	
-	fun breakExp b = 
-		(
-		Nx (T.JUMP(T.NAME(b), [b])))
+	fun breakExp b = (Nx (T.JUMP(T.NAME(b), [b])))
 	
 	fun ifExp(e1, e2) = 
 		let
