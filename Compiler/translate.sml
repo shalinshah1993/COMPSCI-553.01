@@ -74,9 +74,9 @@ struct
 			| Level ({frame=frame, parent=parent}, unique) =>
 				let
 					fun handleAccess(a::l) = (Level({frame=frame, parent=parent}, unique), a)::handleAccess(l)
-					| handleAccess(nil) = []
+					| handleAccess([]) = []
 				in
-					handleAccess(tl(F.formals(frame)))
+					handleAccess(F.formals(frame))
 				end
 				
 	fun allocLocal(level) escapeBool = 
