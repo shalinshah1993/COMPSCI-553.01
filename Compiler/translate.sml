@@ -13,6 +13,7 @@ sig
 	val formals : level -> access list
 	val allocLocal : level -> bool -> access
 	val procEntryExit : {level : level, body : exp} -> unit
+	val resetFrags : unit -> unit
 	val getResult : unit -> MIPSFrame.frag list
 	
 	val seq : Tree.stm list -> Tree.stm
@@ -272,18 +273,17 @@ struct
 			Ex (T.MEM(T.BINOP(T.PLUS, varExp, offsetExp)))
 		end
 		
-	fun procEntryExit({level=level, body=body}) =
+	fun procEntryExit({level=Level ({frame=frame, parent=parent}, unique), body=body}) =
 		let
-			val _ = (fraglist := [])
-			val frame = (case level of
-						  Level({frame,parent}, _) => frame)
-
+			val frame = frame
 			val body' = F.procEntryExit1(frame, unNx(body))
+			val moveStm = T.MOVE((T.TEMP F.RV), unEx (Nx body'))
 			val frag = F.PROC({body=body',frame=frame})
 			val _ = (fraglist := frag::(!fraglist))
-		  in
+		in
 			()
-		  end
-	
-	fun getResult () = !fraglist
+		end
+
+  fun resetFrags() = (fraglist := []; ())
+  fun getResult () = !fraglist
 end

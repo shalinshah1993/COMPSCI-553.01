@@ -446,6 +446,10 @@ struct
 								end
 							val venv' = foldr enterparam venv params
 							val {exp=bodyExp, ty=bodyTy} = transExp(venv', tenv, body, level, endLabel)
+							val entryRecord = case S.look(venv, name) of 
+									SOME(E.FunEntry entry) => entry
+									| _ => ErrorMsg.impossible "Function processing errors...not found..."
+							val unitResult = Tr.procEntryExit({level = (#level entryRecord), body = bodyExp})
 						in
 							(
 								if (assertSubTypes(bodyTy, getReturnType(result), pos, pos)) then
@@ -581,6 +585,7 @@ struct
 	(* Main function which traverses the AST *)
 	fun transProg (expr:A.exp) = 
 		let
+			val unitResult = Tr.resetFrags()
 			val venv = Env.base_venv
 			val tenv = Env.base_tenv
 			val startLabel = Tmp.namedlabel("begin")
@@ -588,6 +593,7 @@ struct
 			val firstLevel = Tr.newLevel({parent=Tr.outermost, name=startLabel,formals=[]})
 			val tree = transExp(venv, tenv, expr, firstLevel, endLabel)
 		in
+
 			Tr.procEntryExit({level=firstLevel,body=(#exp tree)});
             {frags=Tr.getResult(), ty=(#ty tree)}
 	end
