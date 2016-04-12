@@ -1,7 +1,9 @@
 signature FRAME = 
 sig 
-	val wordSize: int
 	type frame
+	val wordSize : int
+
+	datatype register = Reg of string
   	datatype access = InFrame of int
                   | InReg of Temp.temp
 
@@ -11,13 +13,8 @@ sig
 	val formals : frame -> access list
 	val allocLocal : frame -> bool -> access
 
-	val FP : Temp.temp
 	val exp : access -> Tree.exp -> Tree.exp
 
-	val RV : Temp.temp
-	val ZO : Temp.temp
-	val SP : Temp.temp
-	val RA : Temp.temp
 	val procEntryExit1 : frame * Tree.stm -> Tree.stm
 
 	val externalCall: string * Tree.exp list -> Tree.exp
@@ -25,9 +22,19 @@ sig
 	datatype frag = PROC of {body: Tree.stm, frame: frame}
             | STRING of Temp.label * string
 			
-	val calleesaves : Temp.temp list
-	val callersaves : Temp.temp list
+	val zero : Temp.temp
+    val FP : Temp.temp    
+    val SP : Temp.temp
+    val RV : Temp.temp
+    val RA : Temp.temp
+
+	val specialArgs : Temp.temp list
+	val calleeSave : Temp.temp list
+	val callerSave : Temp.temp list
 	val argRegs : Temp.temp list
+	
+	val tempMap: register Temp.Table.table
+	val getTempString: Temp.temp -> string
 end
 
 structure MIPSFrame :> FRAME 
@@ -39,24 +46,23 @@ struct
 	structure A = Assem
 
 	val wordSize = 4
+	datatype register = Reg of string
 
-	val ZO = Temp.newtemp()   (* r0, zero *)
-	val FP = Temp.newtemp()   (* Frame-pointer *)
-	val SP = Temp.newtemp()   (* Stack-pointer *)
-	val RA = Temp.newtemp()   (* Return address *)
-	val RV = Temp.newtemp()   (* Return value *)
-	
-	(* sys-call registers *)
+	(* List of Registers for MIPS *)
+	(* ZERO Register - value cannot be anything but 0 *)
+	val zero = Temp.newtemp()
+
+	(* Function Result Registers - Functions return integer results in v0, and 64-bit integer results in v0 and v1 *)
 	val v0 = Temp.newtemp()
 	val v1 = Temp.newtemp()
-	
-	(* argument registers *)
+
+	(* Function Args Registers - hold the first four words of integer type arguments. *)
 	val a0 = Temp.newtemp()
 	val a1 = Temp.newtemp()
 	val a2 = Temp.newtemp()
 	val a3 = Temp.newtemp()
-	
-	(* temp registers *)
+
+	(* Temp Registers - You as thy will *)
 	val t0 = Temp.newtemp()
 	val t1 = Temp.newtemp()
 	val t2 = Temp.newtemp()
@@ -65,10 +71,10 @@ struct
 	val t5 = Temp.newtemp()
 	val t6 = Temp.newtemp()
 	val t7 = Temp.newtemp()
-	val t8 = Temp.newtemp() (* Extra *)
-	val t9 = Temp.newtemp() (* Extra *)
-	
-	(* Saved registers *)
+	val t8 = Temp.newtemp()
+	val t9 = Temp.newtemp()
+
+	(* Saved Register - Saved across function calls, saved by callee before using *)
 	val s0 = Temp.newtemp()
 	val s1 = Temp.newtemp()
 	val s2 = Temp.newtemp()
@@ -77,12 +83,30 @@ struct
 	val s5 = Temp.newtemp()
 	val s6 = Temp.newtemp()
 	val s7 = Temp.newtemp()
-	
-	val calleesaves=[s0,s1,s2,s3,s4,s5,s6,s7]
-	
-	val callersaves=[t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
-	
+	val s8 = Temp.newtemp()
+
+	(* Frame-pointer - Points at the beginning of previous stored frame *)
+	val FP = Temp.newtemp()   
+	(* Stack-pointer - Points at the top of the stack *)
+	val SP = Temp.newtemp()   
+	(* Return address *)
+	val RA = Temp.newtemp()   
+	(* Return value *)
+	val RV = Temp.newtemp()   
+
+	val specialArgs = [zero,RV,FP,SP,RA]
 	val argRegs = [a0,a1,a2,a3]
+	val calleeSave = [s0,s1,s2,s3,s4,s5,s6,s7]
+	val callerSave = [t0,t1,t2,t3,t4,t5,t6,t7]
+
+	(* As per Appel, return NONE for everything except special regs using tempMap definition *)
+	val specialRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0"))]
+	val tempMap = foldr (fn ((temp, regEntry), table) => Tp.Table.enter(table, temp, regEntry)) Tp.Table.empty specialRegList
+	
+	fun getTempString(temp) =
+		case Tp.Table.look(tempMap, temp) of 
+		  	NONE => Tp.makestring(temp)
+		    | SOME(Reg(regName)) => regName
 	
 	(* can store on register or in frame on memory *)
 	datatype access = InFrame of int 
@@ -131,7 +155,7 @@ struct
 	fun procEntryExit2(frame, body) = 
 		body @
 			[A.OPER{assem="",
-				src=[ZO, RA, SP]@calleesaves,
+				src=[zero, RA, SP]@calleeSave,
 				dst=[],
 				jump=SOME[]}]
 				
