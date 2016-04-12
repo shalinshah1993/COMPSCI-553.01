@@ -13,6 +13,7 @@ sig
 	val formals : level -> access list
 	val allocLocal : level -> bool -> access
 	val procEntryExit : {level : level, body : exp} -> unit
+	val resetFrags : unit -> unit
 	val getResult : unit -> MIPSFrame.frag list
 	
 	val seq : Tree.stm list -> Tree.stm
@@ -66,7 +67,7 @@ struct
 	
 	val outermost = Base
 	
-	fun newLevel({parent=parent, name=name, formals=formals}) = Level({frame=F.newFrame{name=name, formals=formals}, parent=parent}, ref ())
+	fun newLevel({parent=parent, name=name, formals=formals}) = Level({frame=F.newFrame{name=name, formals=true::formals}, parent=parent}, ref ())
 	
 	fun formals inputLevel =
 		case inputLevel of
@@ -74,9 +75,9 @@ struct
 			| Level ({frame=frame, parent=parent}, unique) =>
 				let
 					fun handleAccess(a::l) = (Level({frame=frame, parent=parent}, unique), a)::handleAccess(l)
-					| handleAccess(nil) = []
+					| handleAccess([]) = []
 				in
-					handleAccess(tl(F.formals(frame)))
+					handleAccess(F.formals(frame))
 				end
 				
 	fun allocLocal(level) escapeBool = 
@@ -158,9 +159,7 @@ struct
 	fun letExp ([], body) = (body)
 		| letExp (decs, body) = (Ex (T.ESEQ(seq(map unNx decs), unEx body)))
 	
-	fun breakExp b = 
-		(
-		Nx (T.JUMP(T.NAME(b), [b])))
+	fun breakExp b = (Nx (T.JUMP(T.NAME(b), [b])))
 	
 	fun ifExp(e1, e2) = 
 		let
@@ -250,9 +249,7 @@ struct
 					r))
 		end
 
-	fun callExp(level, label, formals) = 
-		(
-		Ex(T.CALL(T.NAME(label), map unEx formals)))
+	fun callExp(level, label, formals) = (Ex(T.CALL(T.NAME(label), map unEx formals)))
 		
 	fun simpleVar ((defaultLevel, defaultAccess):access, level:level) =
 		let
@@ -262,6 +259,7 @@ struct
 					F.exp(defaultAccess) (currentAccess)
 				else
 					followStaticLinks(parent, F.exp(hd(F.formals frame)) (currentAccess))					
+			| followStaticLinks(_, _) = Er.impossible "Trying to reach static link but reached BASE"
 		in
 			Ex(followStaticLinks(level, T.TEMP(F.FP)))
 		end
@@ -275,18 +273,17 @@ struct
 			Ex (T.MEM(T.BINOP(T.PLUS, varExp, offsetExp)))
 		end
 		
-	fun procEntryExit({level=level, body=body}) =
+	fun procEntryExit({level=Level ({frame=frame, parent=parent}, unique), body=body}) =
 		let
-			val _ = (fraglist := [])
-			val frame = (case level of
-						  Level({frame,parent}, _) => frame)
-
+			val frame = frame
 			val body' = F.procEntryExit1(frame, unNx(body))
+			val moveStm = T.MOVE((T.TEMP F.RV), unEx (Nx body'))
 			val frag = F.PROC({body=body',frame=frame})
 			val _ = (fraglist := frag::(!fraglist))
-		  in
+		in
 			()
-		  end
-	
-	fun getResult () = !fraglist
+		end
+
+  fun resetFrags() = (fraglist := []; ())
+  fun getResult () = !fraglist
 end

@@ -5,9 +5,9 @@ sig
 	type tenv
 	type ty
 	
-	val transVar: venv * tenv * Absyn.var * Translate.level -> expty 
-	val	transExp: venv * tenv * Absyn.exp * Translate.level -> expty 
-	val	transDec: venv * tenv * Absyn.dec * Translate.level * Translate.exp list-> {venv: venv, tenv: tenv, transExpList: Translate.exp list} 
+	val transVar: venv * tenv * Absyn.var * Translate.level * Temp.label -> expty 
+	val	transExp: venv * tenv * Absyn.exp * Translate.level * Temp.label -> expty 
+	val	transDec: venv * tenv * Absyn.dec * Translate.level * Temp.label * Translate.exp list-> {venv: venv, tenv: tenv, transExpList: Translate.exp list} 
 	val	transTy: tenv * Absyn.ty -> Types.ty 
 		
 	val	transProg: Absyn.exp -> {frags: MIPSFrame.frag list, ty: Types.ty}
@@ -116,9 +116,9 @@ struct
 	fun checkNil ({exp=exp, ty=ty}, pos) =
 		assertSubTypes(ty, T.NIL, pos, pos)
 
-	fun transExp(venv,tenv,exp,level) = 
+	fun transExp(venv, tenv, exp, level, endLabel) = 
 		let
-			fun subTransExp (A.VarExp var) = transVar(venv,tenv,var,level)
+			fun subTransExp (A.VarExp var) = transVar(venv, tenv, var, level, endLabel)
 			| subTransExp (A.NilExp) = {exp=(Tr.nilExp()), ty=T.NIL}
 			| subTransExp (A.IntExp i) = {exp=(Tr.intExp(i)), ty=T.INT}
 			| subTransExp (A.StringExp (str,pos)) = {exp=(Tr.stringExp(str)), ty=T.STRING}
@@ -154,8 +154,8 @@ struct
 				)
 			| subTransExp (A.OpExp {left=left, oper=oper, right=right, pos=pos}) = 
 				let
-					val {exp=leftExp, ty=leftType} = transExp(venv,tenv,left,level)
-					val {exp=rightExp, ty=rightType} = transExp(venv,tenv,right,level)
+					val {exp=leftExp, ty=leftType} = transExp(venv, tenv, left, level, endLabel)
+					val {exp=rightExp, ty=rightType} = transExp(venv, tenv, right, level, endLabel)
 				in
 					if (oper=A.PlusOp orelse oper=A.MinusOp orelse oper=A.TimesOp orelse oper=A.DivideOp orelse oper=A.LtOp orelse oper=A.LeOp orelse oper=A.GtOp orelse oper=A.GeOp) then
 						(if (checkInt({exp=leftExp, ty=leftType},pos)) then
@@ -191,7 +191,7 @@ struct
 							| NONE => (Er.error pos ("Undefined field type"); T.RECORD([], ref())))
 					fun resolveFieldLists((symbol, exp, pos)::fieldList, (tySymbol,ty)::fieldTypeList) =
 						if(S.name symbol = S.name tySymbol) then
-							if (assertSubTypes(#ty (transExp(venv,tenv,exp,level)), actual_ty(ty,pos), pos, pos) = true) then
+							if (assertSubTypes(#ty (transExp(venv, tenv, exp, level, endLabel)), actual_ty(ty,pos), pos, pos) = true) then
 								resolveFieldLists(fieldList,fieldTypeList)
 							else
 								(Er.error pos ("Field and type are not able to resolve to the same subtypes");false)
@@ -220,7 +220,7 @@ struct
 					fun subTransExps ([], translatedList, curTy) = {exp=Tr.seqExp(translatedList), ty=curTy}
 					| subTransExps((exp, pos)::l, translatedList, curTy) = 
 						let
-							val {exp=transExp, ty=transTy} = transExp(venv,tenv,exp,level)
+							val {exp=transExp, ty=transTy} = transExp(venv, tenv, exp, level, endLabel)
 						in
 							subTransExps(l, transExp::translatedList, transTy)
 						end
@@ -229,8 +229,8 @@ struct
 				end
 			| subTransExp (A.AssignExp {var=var, exp=exp, pos=pos}) = 
 				let
-					val {exp=expExp, ty=expTy} = transExp (venv,tenv,exp, level)
-					val {exp=varExp, ty=varTy} = transVar (venv,tenv,var, level)
+					val {exp=expExp, ty=expTy} = transExp (venv, tenv, exp, level, endLabel)
+					val {exp=varExp, ty=varTy} = transVar (venv, tenv, var, level, endLabel)
 				in
 					if (assertSubTypes(expTy, varTy, pos, pos)) then
 						{exp=(Tr.assignExp(varExp, expExp)), ty=T.UNIT}
@@ -241,8 +241,8 @@ struct
 				(case elsexp of
 					NONE => 
 						(let
-							val realThenExp = transExp(venv,tenv,thenexp,level)
-							val testExp = transExp(venv,tenv,test,level)
+							val realThenExp = transExp(venv, tenv, thenexp, level, endLabel)
+							val testExp = transExp(venv, tenv, test, level, endLabel)
 						in
 							if (checkInt(testExp, pos)) then
 								if (checkUnit(realThenExp, pos)) then
@@ -254,9 +254,9 @@ struct
 						end)
 					| SOME e => 
 						(let
-							val realThenExp = transExp(venv,tenv,thenexp,level)
-							val realElseExp = transExp(venv,tenv,e,level)
-							val testExp = transExp(venv,tenv,test,level)
+							val realThenExp = transExp(venv, tenv, thenexp, level, endLabel)
+							val realElseExp = transExp(venv, tenv, e, level, endLabel)
+							val testExp = transExp(venv,tenv, test, level, endLabel)
 						in
 							if (checkInt(testExp, pos)) then
 								(if (assertSubTypes(#ty realThenExp, #ty realElseExp, pos, pos)) then
@@ -269,8 +269,8 @@ struct
 			| subTransExp (A.WhileExp {test=test, body=body, pos=pos}) = 
 				let
 					val _ = loopDepth := !loopDepth + 1
-					val testExpTy = transExp(venv,tenv,test,level)
-					val bodyExpTy = transExp(venv,tenv,body,level)
+					val testExpTy = transExp(venv, tenv, test, level, endLabel)
+					val bodyExpTy = transExp(venv, tenv, body, level, endLabel)
 					val _ = loopDepth := !loopDepth - 1
 					val _ = breakCount := 0
 				in
@@ -287,9 +287,9 @@ struct
 					val _ = loopDepth := !loopDepth + 1
 					val accessLevel = Tr.allocLocal level (!escape)
 					val venv' = S.enter(venv, var, (E.VarEntry ({access=accessLevel, ty=T.INT})))
-					val bodyExpTy = transExp(venv', tenv, body,level)
-					val loExpTy = transExp(venv', tenv, lo,level)
-					val hiExpTy = transExp(venv', tenv, hi,level)
+					val bodyExpTy = transExp(venv', tenv, body, level, endLabel)
+					val loExpTy = transExp(venv', tenv, lo, level, endLabel)
+					val hiExpTy = transExp(venv', tenv, hi, level, endLabel)
 					val _ = loopDepth := !loopDepth - 1
 					val _ = breakCount := 0
 				in
@@ -310,11 +310,11 @@ struct
 					val _ = breakCount := !breakCount + 1
 				in
 					if !loopDepth = 0 then
-						(Er.error pos "BREAK can occur only inside a loop"; { exp=Tr.nilExp(), ty=T.ERROR })
+						(Er.error pos "BREAK can occur only inside a loop"; { exp=Tr.breakExp(endLabel), ty=T.ERROR })
 					else if !breakCount > 1 then
-						(Er.error pos "No more loops to BREAK"; { exp=Tr.nilExp(), ty=T.ERROR})
+						(Er.error pos "No more loops to BREAK"; { exp=Tr.breakExp(endLabel), ty=T.ERROR})
 					else
-						{ exp=Tr.breakExp(Tmp.newlabel()), ty=T.UNIT }
+						{ exp=Tr.breakExp(endLabel), ty=T.UNIT }
 				end
 			| subTransExp (A.LetExp {decs=decs, body=body, pos=pos}) =
 				let
@@ -324,7 +324,7 @@ struct
 								[] => {venv=venv, tenv=tenv, transExpList=tExpList}
 								| (dec::l) =>
 									let
-										val {venv=newVenv, tenv=newTenv, transExpList=newTExpList} = transDec(venv,tenv,dec, level, tExpList)
+										val {venv=newVenv, tenv=newTenv, transExpList=newTExpList} = transDec(venv, tenv, dec, level, endLabel, tExpList)
 									in
 										extractDec(newVenv, newTenv, l, newTExpList)
 									end
@@ -339,7 +339,7 @@ struct
 							)*)
 
 					val {venv=finalVenv, tenv=finalTenv, transExpList=finalExpList} = extractDec(venv, tenv, decs, [])
-					val {exp=finalExp, ty=finalTy} = transExp(finalVenv, finalTenv, body, level)
+					val {exp=finalExp, ty=finalTy} = transExp(finalVenv, finalTenv, body, level, endLabel)
 					(*val decList = translateDecs(finalVenv, finalTenv, decs, [])*)
 				in
 					(*{exp=Tr.letExp(decList, finalExp), ty=finalTy}*)
@@ -347,8 +347,8 @@ struct
 				end
 			| subTransExp (A.ArrayExp {typ=typ, size=size, init=init, pos=pos}) = 
 				let
-					val sizeExpTy = transExp(venv,tenv,size,level);
-					val initExpTy = transExp(venv,tenv,init,level);
+					val sizeExpTy = transExp(venv, tenv, size, level, endLabel);
+					val initExpTy = transExp(venv, tenv, init, level, endLabel);
 				in
 					(case S.look(tenv,typ) of
 						SOME (ty) =>
@@ -370,7 +370,7 @@ struct
 			subTransExp exp
 		end
 
-	and transVar(venv,tenv,var, level) = 
+	and transVar(venv, tenv, var, level, endLabel) = 
 		let
 			fun subTransVar (A.SimpleVar(simVar,pos)) =
 				(case S.look(venv, simVar) of
@@ -379,7 +379,7 @@ struct
 					| NONE => (Er.error pos ("Undefined variable " ^ S.name(simVar)); {exp=Tr.nilExp(), ty=T.ERROR}))
 			| subTransVar (A.FieldVar (var, symbol, pos)) = 
 				let
-					val {exp=varExp, ty=varType} = transVar(venv, tenv, var, level);
+					val {exp=varExp, ty=varType} = transVar(venv, tenv, var, level, endLabel);
 
 					fun findFieldWithIndex([], symToFind, pos, index) = (Er.error pos "Could not find the correct FIELD VAR";{exp=Tr.nilExp(), ty=T.ERROR})
 					| findFieldWithIndex((sym, typeOfSym)::others, symToFind, pos, index) =
@@ -396,8 +396,8 @@ struct
 				end
 			| subTransVar (A.SubscriptVar (var, exp, pos)) = 
 				(let
-					val {exp=varExp, ty=varType} = transVar(venv,tenv, var, level);
-					val expExpTy = transExp(venv, tenv, exp, level)
+					val {exp=varExp, ty=varType} = transVar(venv, tenv, var, level, endLabel);
+					val expExpTy = transExp(venv, tenv, exp, level, endLabel)
 				in
 					if (checkInt(expExpTy, pos)) then
 						(case varType of
@@ -410,7 +410,7 @@ struct
 			subTransVar var
 		end
 
-	and transDec(venv, tenv, dec, level, tExpList) = 
+	and transDec(venv, tenv, dec, level, endLabel, tExpList) = 
 		let 
 			fun subTransDec (A.FunctionDec funcs) = 
 				(let
@@ -445,7 +445,11 @@ struct
 									S.enter(newVenv, name, E.VarEntry({access=localAccessLevel, ty=ty}))
 								end
 							val venv' = foldr enterparam venv params
-							val {exp=bodyExp, ty=bodyTy} = transExp(venv', tenv, body,level)
+							val {exp=bodyExp, ty=bodyTy} = transExp(venv', tenv, body, level, endLabel)
+							val entryRecord = case S.look(venv, name) of 
+									SOME(E.FunEntry entry) => entry
+									| _ => ErrorMsg.impossible "Function processing errors...not found..."
+							val unitResult = Tr.procEntryExit({level = (#level entryRecord), body = bodyExp})
 						in
 							(
 								if (assertSubTypes(bodyTy, getReturnType(result), pos, pos)) then
@@ -470,7 +474,7 @@ struct
 				end)
 			| subTransDec (A.VarDec {name=name, escape=escape, typ=typ, init=init, pos=pos}) = 
 				let 
-					val {exp=varExp, ty=varTy} = transExp(venv,tenv,init,level)
+					val {exp=varExp, ty=varTy} = transExp(venv, tenv, init, level, endLabel)
 					val accessLevel = Tr.allocLocal level (!escape)
 					val newTransExpList = Tr.assignExp(Tr.simpleVar(accessLevel, level), varExp)::tExpList
 				in
@@ -581,12 +585,16 @@ struct
 	(* Main function which traverses the AST *)
 	fun transProg (expr:A.exp) = 
 		let
+			val unitResult = Tr.resetFrags()
 			val venv = Env.base_venv
 			val tenv = Env.base_tenv
-			val base = Tr.newLevel({parent=Tr.outermost, name=Tmp.namedlabel("base"),formals=[]})
-			val tree = transExp(venv, tenv, expr,base)
+			val startLabel = Tmp.namedlabel("begin")
+			val endLabel = Tmp.namedlabel("end")
+			val firstLevel = Tr.newLevel({parent=Tr.outermost, name=startLabel,formals=[]})
+			val tree = transExp(venv, tenv, expr, firstLevel, endLabel)
 		in
-			Tr.procEntryExit({level=base,body=(#exp tree)});
+
+			Tr.procEntryExit({level=firstLevel,body=(#exp tree)});
             {frags=Tr.getResult(), ty=(#ty tree)}
 	end
 end
