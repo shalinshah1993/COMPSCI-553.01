@@ -1,6 +1,6 @@
-structure Flow :
+signature FLOW =
 sig
-	structure Graph
+	structure Graph : GRAPH
 	
 	(* control: directed graph where each node represents an inst/block
 	def: table of temps defined at each node
@@ -10,8 +10,17 @@ sig
 	*)
 	
 	datatype flowgraph =
-		FGRAPH of (control: Graph.graph,
+		FGRAPH of {control: Graph.graph,
 					def: Temp.temp list Graph.Table.table,
 					use: Temp.temp list Graph.Table.table,
-					ismove: bool Graph.Table.table)
+					ismove: bool Graph.Table.table}
+end
+structure Flow :> FLOW =
+struct
+	structure Graph = Graph
+	datatype flowgraph =
+		FGRAPH of {control: Graph.graph,
+					def: Temp.temp list Graph.Table.table,
+					use: Temp.temp list Graph.Table.table,
+					ismove: bool Graph.Table.table}
 end
