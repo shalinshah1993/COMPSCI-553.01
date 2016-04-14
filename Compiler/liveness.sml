@@ -22,8 +22,8 @@ struct
 	
 	datatype igraph =
 		IGRAPH of {graph: G.graph,
-					tnode: Temp.temp -> G.node,
-					gtemp: G.node -> Temp.temp,
+					tnode: Te.temp -> G.node,
+					gtemp: G.node -> Te.temp,
 					moves: (G.node * G.node) list}
 					
 	(*fun interferenceGraph (FGRAPH{control, def, use, ifmove})*)
@@ -31,7 +31,7 @@ struct
 					
 	(* FIX *)
 	fun show (outstream, IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves})=
-			TextIO.output(outstream, String.concatWith "\n" (map (fn (n) => Temp.makestring (gtemp(n))) (G.nodes graph))) 
+			TextIO.output(outstream, String.concatWith "\n" (map (fn (x) => Te.makestring (gtemp(x))) (G.nodes graph))) 
 			(* String.concatWith makes printing lists easier *)
 
 end
