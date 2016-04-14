@@ -51,14 +51,18 @@ struct
 				let
 					val lookupInst = T.look(inputInst, a)
 					
-					fun makeLabelNode(label, (from::to)) =
-						case lookupInst of
-							SOME (A.LABEL{assem,lab}) =>
-								if label = lab then
-									from
-								else
-									makeLabelNode (label, to)
-							| SOME _ => makeLabelNode (label, to)
+					fun makeLabelNode(label, (from::to)): G.node =
+						let
+							val lookupInst2 = T.look(inputInst, from)
+						in
+							(case lookupInst2 of
+								SOME (A.LABEL{assem,lab}) =>
+									if label = lab then
+										from
+									else
+										makeLabelNode (label, to)
+								| SOME _ => makeLabelNode(label, to))
+						end
 				in
 					(G.mk_edge{from=a, to=m};
 					(case lookupInst of
@@ -77,6 +81,4 @@ struct
 			(connectNodeList(instTable, nodeList);
 			(F.FGRAPH{control=newGraph, def=defTable, use=useTable, ismove=isMoveTable}, nodeList))
 		end
-		
-	
 end
