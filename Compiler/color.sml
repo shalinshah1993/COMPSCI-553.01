@@ -52,8 +52,17 @@ struct
 		(* adjList - for each uncolored node, this maps it to interfering nodes *)
 	    val adjList = foldl mapNodeWithAdj G.Table.empty (ListPair.zip(uncolored, (map Graph.adj uncolored)))
 
-		(* contains all non-precolored, non-simplified nodes of degree < k *)
+	    (* Used LIST for maintaining all the data structures *)
+		(* list of low degree non-move-related nodes *)
         val simplifyWorklist = ref(nodeSet.addList(nodeSet.empty, (List.filter (fn n => nodeSet.listItems(!n) < K) uncolored)))
+        (* high degree nodes *)
+		val spillWorklist = ref(nodeSet.addList(nodeSet.empty, (List.filter (fn n => nodeSet.listItems(!n) >= K) uncolored))
+		(* nodes marked for spilling during this round; initially empty *)
+		val spilledNodes = ref []
+		(* nodes successfully colored *)
+		val coloredNodes = ref []
+		(* stack containing temporaries removed from the graph *)
+		val selectStack = ref []
 	in
 		()
 	end
