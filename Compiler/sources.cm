@@ -26,10 +26,13 @@ temp.sml
 
 codegen.sml
 canon.sml 
-flowgraph.sml
+flow.sml
 graph.sig
 graph.sml
 assem.sml
+
+makegraph.sml
+liveness.sml
 
 
 main.sml
