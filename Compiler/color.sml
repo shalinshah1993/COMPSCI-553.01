@@ -56,15 +56,27 @@ struct
 		(* list of low degree non-move-related nodes *)
         val simplifyWorklist = ref(nodeSet.addList(nodeSet.empty, (List.filter (fn n => nodeSet.listItems(!n) < K) uncolored)))
         (* high degree nodes *)
-		val spillWorklist = ref(nodeSet.addList(nodeSet.empty, (List.filter (fn n => nodeSet.listItems(!n) >= K) uncolored))
+		val spillWorklist = ref(nodeSet.addList(nodeSet.empty, (List.filter (fn n => nodeSet.listItems(!n) >= K) uncolored)))
 		(* nodes marked for spilling during this round; initially empty *)
 		val spilledNodes = ref []
 		(* nodes successfully colored *)
 		val coloredNodes = ref []
 		(* stack containing temporaries removed from the graph *)
 		val selectStack = ref []
+
+		fun Main () =
+			(* init lists already made so keep doing this in loop till they are empty *)
+			if not nodeSet.isEmpty(!simplifyWorklist) then 
+				(* do simplify *)
+				Main()
+			else if not (nodeSet.isEmpty(!spillWorklist)) then
+				(* do spill *)
+				Main()
+			else
+				(* do nothing *)
+				()
 	in
-		()
+		Main()
 	end
 	
 end
