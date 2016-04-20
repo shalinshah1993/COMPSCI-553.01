@@ -64,6 +64,39 @@ struct
 		(* stack containing temporaries removed from the graph *)
 		val selectStack = ref []
 
+		fun neighbours(node) =
+        let
+            val SOME(adjNodes) = G.Table.look(adjList, node)
+            val adjNodesSet = nodeSet.addList(nodeSet.empty , adjNodes)
+            val selectSet = nodeSet.addList(nodeSet.empty, !selectStack)
+        in
+            nodeSet.difference(adjNodesSet, selectSet)
+        end
+
+		(* As per appel's algo on page 246 *)
+		fun simplify () =
+		let
+			val simplifyListHead::others = nodeSet.listItems(!simplifyWorklist)
+
+			(* Decrement out for all the adjNode of node simplified *)
+			fun decrementDegree(m) =
+	        let
+	            val SOME(d) = G.Table.look(!degree, m)
+	        in
+	            degree := G.Table.enter(!degree, m, d - 1);
+	            (
+	            	if d = K then
+	                	(spillWorklist := nodeSet.delete(!spillWorklist, m); simplifyWorklist := nodeSet.add(!simplifyWorklist, m))
+	            	else 
+	            		()
+	            )
+	        end
+		in
+			simplifyWorklist := nodeSet.addList(nodeSet.empty, others);
+			selectStack := simplifyListHead::(!selectStack);
+			nodeSet.app decrementDegree neighbours(simplifyListHead)
+		end
+
 		fun Main () =
 			(* init lists already made so keep doing this in loop till they are empty *)
 			if not nodeSet.isEmpty(!simplifyWorklist) then 
