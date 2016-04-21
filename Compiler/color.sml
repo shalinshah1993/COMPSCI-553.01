@@ -19,18 +19,14 @@ struct
 	structure Tp = Temp
 	structure L = Liveness
 
-(*	structure nodeSet = BinarySetFn(struct
-								type ord_key = int
-								val compare = Int.compare
-								end)*)
-	structure nodeSet = BinarySetFn(struct
+	structure nodeSet = ListSetFn(struct
 									type ord_key = Tp.temp
 									val compare = Int.compare
-								  end)
+								  	end)
 
 	type allocation = Frame.register Tp.Table.table
 
-	fun color (interference as Liveness.IGRAPH{graph, tnode, gtemp, moves}, initial, spillCost, registers) =
+	fun color ({interference=L.IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}, initial=initial, spillCost=spillCost, registers=registers}) =
 	let
 		(* initial - temporary, not colored or processed *)
 		(* number of available registers *)
@@ -48,8 +44,8 @@ struct
         (* List of pre-colored and non-precolored nodes *)
         val (precolored, uncolored) = List.partition checkIfPrecolored nodes
 
-		fun mapNodeWithAdj((node,value), t) = G.Table.enter(t, node, value)	
-        fun getAdjCount(node) = length(G.adj node)
+		fun mapNodeWithAdj ((node,value), t) = G.Table.enter(t, node, value)	
+        fun getAdjCount (node) = length(G.adj node)
 
 		(* degree - an array containing current degree of each node *)
 		val degree = ref(foldl mapNodeWithAdj G.Table.empty (ListPair.zip(uncolored, (map getAdjCount uncolored))))
@@ -58,21 +54,21 @@ struct
 
 	    (* Used LIST for maintaining all the data structures *)
 		(* list of low degree non-move-related nodes *)
-        val simplifyWorklist = ref (nodeSet.addList(nodeSet.empty, (List.filter (fn n => getAdjCount(n) < K) uncolored)))
+        val simplifyWorklist = ref (nodeSet.addList(nodeSet.empty, map gtemp (List.filter (fn n => getAdjCount(n) < K) uncolored)))
         (* high degree nodes *)
-		val spillWorklist = ref (nodeSet.addList(nodeSet.empty, (List.filter (fn n => getAdjCount(n) >= K) uncolored)))
+		val spillWorklist = ref (nodeSet.addList(nodeSet.empty, map gtemp (List.filter (fn n => getAdjCount(n) >= K) uncolored)))
 		(* nodes marked for spilling during this round; initially empty *)
-		val spilledNodes = ref []
+		val spilledNodes = ref nodeSet.empty
 		(* nodes successfully colored *)
-		val coloredNodes = ref []
+		val coloredNodes = ref nodeSet.empty
 		(* stack containing temporaries removed from the graph *)
-		val selectStack = ref []
+		val selectStack = ref nodeSet.empty
 
 		fun neighbours(node) =
         let
             val SOME(adjNodes) = G.Table.look(adjList, node)
-            val adjNodesSet = nodeSet.addList(nodeSet.empty , adjNodes)
-            val selectSet = nodeSet.addList(nodeSet.empty, !selectStack)
+            val adjNodesSet = nodeSet.addList(nodeSet.empty ,map gtemp adjNodes)
+            val selectSet = nodeSet.addList(nodeSet.empty, nodeSet.listItems(!selectStack))
         in
             nodeSet.difference(adjNodesSet, selectSet)
         end
@@ -85,25 +81,25 @@ struct
 			(* Decrement out for all the adjNode of node simplified *)
 			fun decrementDegree(m) =
 	        let
-	            val SOME(d) = G.Table.look(!degree, m)
+	        	val SOME(d) = G.Table.look(!degree, m)
 	        in
 	            degree := G.Table.enter(!degree, m, d - 1);
 	            (
 	            	if d = K then
-	                	(spillWorklist := nodeSet.delete(!spillWorklist, m); simplifyWorklist := nodeSet.add(!simplifyWorklist, m))
+	                	(spillWorklist := nodeSet.delete(!spillWorklist, gtemp(m)); simplifyWorklist := nodeSet.add(!simplifyWorklist, gtemp(m)))
 	            	else 
 	            		()
 	            )
 	        end
 		in
 			simplifyWorklist := nodeSet.addList(nodeSet.empty, others);
-			selectStack := simplifyListHead::(!selectStack);
-			nodeSet.app decrementDegree neighbours(simplifyListHead)
+			selectStack := nodeSet.add(!selectStack, simplifyListHead);
+			nodeSet.app (decrementDegree) neighbours(tnode(simplifyListHead))
 		end
 
 		fun Main () =
 			(* init lists already made so keep doing this in loop till they are empty *)
-			if not nodeSet.isEmpty(!simplifyWorklist) then 
+			if not (nodeSet.isEmpty(!simplifyWorklist)) then 
 				(* do simplify *)
 				Main()
 			else if not (nodeSet.isEmpty(!spillWorklist)) then
