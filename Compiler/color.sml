@@ -81,7 +81,7 @@ struct
             degree := G.Table.enter(!degree, tnode(m), oldDegree - 1);
             (
             	if oldDegree = K then
-                	(spillWorklist := nodeSet.delete(!spillWorklist, (m)); simplifyWorklist := nodeSet.add(!simplifyWorklist, (m)))
+                	(spillWorklist := nodeSet.delete(!spillWorklist, m); simplifyWorklist := nodeSet.add(!simplifyWorklist, m))
             	else 
             		()
             )
@@ -92,24 +92,40 @@ struct
 		let
 			val simplifyListHead::others = nodeSet.listItems(!simplifyWorklist)
 		in
-			simplifyWorklist := nodeSet.addList(nodeSet.empty, others);
+			simplifyWorklist := nodeSet.delete(!simplifyWorklist, simplifyListHead);
 			selectStack := nodeSet.add(!selectStack, simplifyListHead);
 			nodeSet.app (decrementDegree) (neighbours(tnode(simplifyListHead)))
+		end
+
+		(* As per appel's algo on 248. I'm not using any heuristics, just the simplistic case remove first element *)
+		fun selectSpill() = 
+		let
+			val spillListHead::other = nodeSet.listItems(!spillWorklist)
+		in
+			spillWorklist := nodeSet.delete(!spillWorklist, spillListHead);
+			simplifyWorklist := nodeSet.add(!simplifyWorklist, spillListHead)
+		end
+
+		fun assignColors() = 
+		let
+			val name = value
+		in
+			body
 		end
 
 		fun Main () =
 			(* init lists already made so keep doing this in loop till they are empty *)
 			if not (nodeSet.isEmpty(!simplifyWorklist)) then 
 				(* do simplify *)
-				Main()
+				(simplify(); Main())
 			else if not (nodeSet.isEmpty(!spillWorklist)) then
 				(* do spill *)
-				Main()
+				(selectSpill(); Main())
 			else
 				(* do nothing *)
 				()
 	in
-		Main()
+		(Main(); assignColors())
 	end
 	
 end
