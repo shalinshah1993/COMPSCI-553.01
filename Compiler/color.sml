@@ -28,11 +28,13 @@ struct
 
 	fun color ({interference=L.IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}, initial=initial, spillCost=spillCost, registers=registers}) =
 	let
-		(* initial - temporary, not colored or processed *)
+		(* initial - temporary table, not colored or processed *)
 		(* number of available registers *)
 		val K = length(registers)
 		(* List of nodes *)
 		val nodes = G.nodes(graph)
+		(* Color list *)
+		val color = ref Tp.Table.empty
 
 		(* precolored - machine registers, preassigned a color *)
 		fun checkIfPrecolored(node) =
@@ -108,11 +110,47 @@ struct
 
 		fun assignColors() = 
 		let
-			val name = value
-		in
-			body
-		end
+			(* pop item off select stack *)
+			val n::others = nodeSet.listItems(!selectStack)
+			val _ = nodeSet.delete(!selectStack, n)
 
+			val okColors = ref (nodeSet.addList(nodeSet.empty, registers))
+			val SOME(adjList) = G.Table.look(adjList, tnode n)
+			(* Add all the precolored and already colored node to a set *)
+			val colored = ref (nodeSet.addList(nodeSet.empty, nodeSet.listItems(!coloredNodes)))
+			val _ = (colored := nodeSet.addList(!colored, map gtemp precolored))
+
+			fun removeColorNode (node) =
+			let
+			 	val SOME(nodeID) = Tp.Table.look(!color, gtemp(node))
+			 in
+			 	if nodeSet.member(!colored, nodeID) then 
+			 		okColors := nodeSet.delete(!okColors, nodeID)
+			 	else
+			 		()
+			 end 
+		in
+			if length(nodeSet.listItems(!selectStack)) <> 0 then
+			(
+				app removeColorNode adjList;
+				if length(nodeSet.listItems(!okColors)) = 0 then 
+					spilledNodes := nodeSet.add(!spilledNodes, n)
+				else
+				(
+					coloredNodes := nodeSet.add(!coloredNodes, n);
+					let
+						val colorOfNode::others = nodeSet.listItems(!okColors)
+						val _ = nodeSet.delete(!okColors, colorOfNode)
+					in
+						color := Tp.Table.enter(!color, n, colorOfNode)
+					end
+				)
+			)
+			else
+			();
+			assignColors()
+		end
+				
 		fun Main () =
 			(* init lists already made so keep doing this in loop till they are empty *)
 			if not (nodeSet.isEmpty(!simplifyWorklist)) then 
@@ -125,7 +163,7 @@ struct
 				(* do nothing *)
 				()
 	in
-		(Main(); assignColors())
+		(Main(); assignColors(); (!color, !spilledNodes))
 	end
 	
 end
