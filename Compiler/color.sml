@@ -67,34 +67,34 @@ struct
 		fun neighbours(node) =
         let
             val SOME(adjNodes) = G.Table.look(adjList, node)
-            val adjNodesSet = nodeSet.addList(nodeSet.empty ,map gtemp adjNodes)
+            val adjNodesSet = nodeSet.addList(nodeSet.empty, map gtemp adjNodes)
             val selectSet = nodeSet.addList(nodeSet.empty, nodeSet.listItems(!selectStack))
         in
             nodeSet.difference(adjNodesSet, selectSet)
+        end
+
+		(* Decrement out for all the adjNode of node simplified *)
+		fun decrementDegree(m) =
+        let
+        	val SOME(oldDegree) = G.Table.look(!degree, tnode(m))
+        in
+            degree := G.Table.enter(!degree, tnode(m), oldDegree - 1);
+            (
+            	if oldDegree = K then
+                	(spillWorklist := nodeSet.delete(!spillWorklist, (m)); simplifyWorklist := nodeSet.add(!simplifyWorklist, (m)))
+            	else 
+            		()
+            )
         end
 
 		(* As per appel's algo on page 246 *)
 		fun simplify () =
 		let
 			val simplifyListHead::others = nodeSet.listItems(!simplifyWorklist)
-
-			(* Decrement out for all the adjNode of node simplified *)
-			fun decrementDegree(m) =
-	        let
-	        	val SOME(d) = G.Table.look(!degree, m)
-	        in
-	            degree := G.Table.enter(!degree, m, d - 1);
-	            (
-	            	if d = K then
-	                	(spillWorklist := nodeSet.delete(!spillWorklist, gtemp(m)); simplifyWorklist := nodeSet.add(!simplifyWorklist, gtemp(m)))
-	            	else 
-	            		()
-	            )
-	        end
 		in
 			simplifyWorklist := nodeSet.addList(nodeSet.empty, others);
 			selectStack := nodeSet.add(!selectStack, simplifyListHead);
-			nodeSet.app (decrementDegree) neighbours(tnode(simplifyListHead))
+			nodeSet.app (decrementDegree) (neighbours(tnode(simplifyListHead)))
 		end
 
 		fun Main () =
