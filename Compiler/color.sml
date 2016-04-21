@@ -15,14 +15,18 @@ structure color :> COLOR
 = 
 struct
 	structure Frame = MIPSFrame
-	structure G = Graph
+	structure G = Flow.Graph
 	structure Tp = Temp
 	structure L = Liveness
 
-	structure nodeSet = BinarySetFn(struct
+(*	structure nodeSet = BinarySetFn(struct
 								type ord_key = int
 								val compare = Int.compare
-								end)
+								end)*)
+	structure nodeSet = BinarySetFn(struct
+									type ord_key = Tp.temp
+									val compare = Int.compare
+								  end)
 
 	type allocation = Frame.register Tp.Table.table
 
@@ -45,18 +49,18 @@ struct
         val (precolored, uncolored) = List.partition checkIfPrecolored nodes
 
 		fun mapNodeWithAdj((node,value), t) = G.Table.enter(t, node, value)	
-        fun getAdjCount(node) = length(Graph.adj node)
+        fun getAdjCount(node) = length(G.adj node)
 
 		(* degree - an array containing current degree of each node *)
 		val degree = ref(foldl mapNodeWithAdj G.Table.empty (ListPair.zip(uncolored, (map getAdjCount uncolored))))
 		(* adjList - for each uncolored node, this maps it to interfering nodes *)
-	    val adjList = foldl mapNodeWithAdj G.Table.empty (ListPair.zip(uncolored, (map Graph.adj uncolored)))
+	    val adjList = foldl mapNodeWithAdj G.Table.empty (ListPair.zip(uncolored, (map G.adj uncolored)))
 
 	    (* Used LIST for maintaining all the data structures *)
 		(* list of low degree non-move-related nodes *)
-        val simplifyWorklist = ref(nodeSet.addList(nodeSet.empty, (List.filter (fn n => nodeSet.listItems(!n) < K) uncolored)))
+        val simplifyWorklist = ref (nodeSet.addList(nodeSet.empty, (List.filter (fn n => getAdjCount(n) < K) uncolored)))
         (* high degree nodes *)
-		val spillWorklist = ref(nodeSet.addList(nodeSet.empty, (List.filter (fn n => nodeSet.listItems(!n) >= K) uncolored)))
+		val spillWorklist = ref (nodeSet.addList(nodeSet.empty, (List.filter (fn n => getAdjCount(n) >= K) uncolored)))
 		(* nodes marked for spilling during this round; initially empty *)
 		val spilledNodes = ref []
 		(* nodes successfully colored *)
