@@ -6,10 +6,10 @@ sig
   	type allocation = Frame.register Temp.Table.table
   
   	val color : {interference: Liveness.igraph,
-				initial: allocation,
+				initial: Frame.register Temp.Table.table,
               	spillCost: Graph.node -> int,
               	registers: Frame.register list}
-              	-> allocation * Temp.temp list  
+              	-> string Temp.Table.table * Temp.temp list  
 end
 structure color :> COLOR 
 = 
@@ -23,6 +23,10 @@ struct
 									type ord_key = Tp.temp
 									val compare = Int.compare
 								  	end)
+	structure regSet = ListSetFn(struct
+									type ord_key = string
+									val compare = String.compare
+								  	end)
 
 	type allocation = Frame.register Tp.Table.table
 
@@ -30,6 +34,13 @@ struct
 	let
 		(* initial - temporary table, not colored or processed *)
 		(* number of available registers *)
+		fun convertRegToString (reg) =
+		(
+			case reg of 
+				Frame.Reg(x) => x
+		)
+		val registers = map convertRegToString registers
+
 		val K = length(registers)
 		(* List of nodes *)
 		val nodes = G.nodes(graph)
@@ -40,8 +51,8 @@ struct
 		fun checkIfPrecolored(node) =
         (
         	case Tp.Table.look(initial, gtemp(node)) of
-      			SOME _ => true
-           	|  	NONE   => false
+      			SOME(MIPSFrame.Reg(regname))  => true
+           	|  	NONE => false
         )
         (* List of pre-colored and non-precolored nodes *)
         val (precolored, uncolored) = List.partition checkIfPrecolored nodes
@@ -114,7 +125,7 @@ struct
 			val n::others = nodeSet.listItems(!selectStack)
 			val _ = nodeSet.delete(!selectStack, n)
 
-			val okColors = ref (nodeSet.addList(nodeSet.empty, registers))
+			val okColors = ref (regSet.addList(regSet.empty, registers))
 			val SOME(adjList) = G.Table.look(adjList, tnode n)
 			(* Add all the precolored and already colored node to a set *)
 			val colored = ref (nodeSet.addList(nodeSet.empty, nodeSet.listItems(!coloredNodes)))
@@ -124,8 +135,8 @@ struct
 			let
 			 	val SOME(nodeID) = Tp.Table.look(!color, gtemp(node))
 			 in
-			 	if nodeSet.member(!colored, nodeID) then 
-			 		okColors := nodeSet.delete(!okColors, nodeID)
+			 	if nodeSet.member(!colored, gtemp node) then 
+			 		okColors := regSet.delete(!okColors, nodeID)
 			 	else
 			 		()
 			 end 
@@ -133,14 +144,14 @@ struct
 			if length(nodeSet.listItems(!selectStack)) <> 0 then
 			(
 				app removeColorNode adjList;
-				if length(nodeSet.listItems(!okColors)) = 0 then 
+				if length(regSet.listItems(!okColors)) = 0 then 
 					spilledNodes := nodeSet.add(!spilledNodes, n)
 				else
 				(
 					coloredNodes := nodeSet.add(!coloredNodes, n);
 					let
-						val colorOfNode::others = nodeSet.listItems(!okColors)
-						val _ = nodeSet.delete(!okColors, colorOfNode)
+						val colorOfNode::others = regSet.listItems(!okColors)
+						val _ = regSet.delete(!okColors, colorOfNode)
 					in
 						color := Tp.Table.enter(!color, n, colorOfNode)
 					end
@@ -163,7 +174,7 @@ struct
 				(* do nothing *)
 				()
 	in
-		(Main(); assignColors(); (!color, !spilledNodes))
+		(Main(); assignColors(); (!color, nodeSet.listItems(!spilledNodes)))
 	end
 	
 end
