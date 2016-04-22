@@ -3,7 +3,7 @@ signature REG_ALLOC
 sig
 	structure Frame : FRAME
 	type allocation = Frame.register Temp.Table.table
-	val alloc : Assem.instr list * Frame.frame -> Temp.temp list * string Temp.Table.table
+	val alloc : Assem.instr list * Frame.frame -> Temp.temp list * color.allocation
 end
 structure RegAlloc : REG_ALLOC =
 struct
