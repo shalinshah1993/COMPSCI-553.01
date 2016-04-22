@@ -103,6 +103,12 @@ struct
 	val specialRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0"))]
 	val tempMap = foldr (fn ((temp, regEntry), table) => Tp.Table.enter(table, temp, regEntry)) Tp.Table.empty specialRegList
 	
+	fun moveVarToReg (savedVar, saveReg) = Tr.MOVE (Tr.TEMP saveReg, Tr.TEMP savedVar)
+	
+	fun generateSequenceFromList [] = Tr.EXP (Tr.CONST 0)
+		| generateSequenceFromList [a] = a
+		| generateSequenceFromList (a::l) = (Tr.SEQ (a, (generateSequenceFromList l)))
+	
 	fun getTempString(temp) =
 		case Tp.Table.look(tempMap, temp) of 
 		  	NONE => Tp.makestring(temp)
@@ -150,7 +156,27 @@ struct
     | exp (InReg (t)) fp:Tr.exp = Tr.TEMP(t)
 
     (* Dummy implementation as described by Appel *)
-    fun procEntryExit1(frame, body) = body
+	 
+    fun procEntryExit1(frame, body) = 
+		let
+			val saveRegisters = [RA] @ calleeSave
+			val tempRegisters = map (fn t => Tp.newtemp()) saveRegisters
+			val RR = generateSequenceFromList (ListPair.mapEq moveVarToReg (tempRegisters, saveRegisters))
+			val RS = generateSequenceFromList (ListPair.mapEq moveVarToReg (saveRegisters, tempRegisters))
+			val newBody = generateSequenceFromList [RS, body, RR]
+			val functionParams = formals frame
+			
+			fun moveArguments (arg, accessLevel) =
+				let
+					val newAccess = exp accessLevel
+				in
+					Tr.MOVE (newAccess (Tr.TEMP FP), Tr.TEMP arg)
+				end
+				
+			val viewShift = generateSequenceFromList (ListPair.map moveArguments (argRegs, functionParams))
+		in
+			body
+		end
 	
 	fun procEntryExit2(frame, body) = 
 		body @
