@@ -6,10 +6,10 @@ sig
   	type allocation = Frame.register Temp.Table.table
   
   	val color : {interference: Liveness.igraph,
-				initial: Frame.register Temp.Table.table,
+				initial: allocation,
               	(*spillCost: Graph.node -> int,*)
               	registers: Frame.register list}
-              	-> string Temp.Table.table * Temp.temp list  
+              	-> allocation * Temp.temp list  
 end
 structure color :> COLOR 
 = 
@@ -24,8 +24,14 @@ struct
 									val compare = Int.compare
 								  	end)
 	structure regSet = ListSetFn(struct
-									type ord_key = string
-									val compare = String.compare
+									type ord_key = Frame.register
+									fun compare(a, b) = 
+										let
+											val Frame.Reg(a) = a
+											val Frame.Reg(b) = b
+										in
+											String.compare(a, b)
+										end
 								  	end)
 
 	type allocation = Frame.register Tp.Table.table
@@ -35,12 +41,12 @@ struct
 	let
 		(* initial - temporary table, not colored or processed *)
 		(* number of available registers *)
-		fun convertRegToString (reg) =
+		(*fun convertRegToString (reg) =
 		(
 			case reg of 
 				Frame.Reg(x) => x
 		)
-		val registers = map convertRegToString registers
+		val registers = map convertRegToString registers*)
 
 		val K = length(registers)
 		(* List of nodes *)
