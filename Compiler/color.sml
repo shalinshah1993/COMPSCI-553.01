@@ -142,7 +142,7 @@ struct
 
 			fun removeColorNode (node) =
 			let
-			 	val SOME(nodeID) = Tp.Table.look(!color, gtemp(node))
+			 	val nodeID = case Tp.Table.look(!color, gtemp(node)) of SOME(x) => x | _ => (print "Compiler Error while assigning colors to registers\n"; Frame.Reg("0"))
 			 in
 			 	if nodeSet.member(!colored, gtemp node) then 
 			 		okColors := regSet.delete(!okColors, nodeID)
