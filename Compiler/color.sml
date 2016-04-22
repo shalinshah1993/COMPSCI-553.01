@@ -7,7 +7,7 @@ sig
   
   	val color : {interference: Liveness.igraph,
 				initial: Frame.register Temp.Table.table,
-              	spillCost: Graph.node -> int,
+              	(*spillCost: Graph.node -> int,*)
               	registers: Frame.register list}
               	-> Frame.register Temp.Table.table * Temp.temp list  
 end
@@ -36,7 +36,8 @@ struct
 
 	type allocation = Frame.register Tp.Table.table
 
-	fun color ({interference=L.IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}, initial=initial, spillCost=spillCost, registers=registers}) =
+	(*fun color ({interference=L.IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}, initial=initial, spillCost=spillCost, registers=registers}) =*)
+	fun color ({interference=L.IGRAPH{graph=graph, tnode=tnode, gtemp=gtemp, moves=moves}, initial=initial, registers=registers}) =
 	let
 		(* initial - temporary table, not colored or processed *)
 		(* number of available registers *)
