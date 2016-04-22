@@ -96,7 +96,9 @@ struct
 		(* Decrement out for all the adjNode of node simplified *)
 		fun decrementDegree(m) =
         let
-        	val SOME(oldDegree) = G.Table.look(!degree, tnode(m))
+        	val oldDegree = case G.Table.look(!degree, tnode(m)) of
+        		SOME(x) => x
+        		| _ => (print "Compiler Error in assigning register colors\n"; 0)        	
         in
             degree := G.Table.enter(!degree, tnode(m), oldDegree - 1);
             (
