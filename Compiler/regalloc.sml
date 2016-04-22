@@ -3,7 +3,7 @@ signature REG_ALLOC
 sig
 	structure Frame : FRAME
 	type allocation = Frame.register Temp.Table.table
-	(*val alloc : Assem.instr list * Frame.frame -> Assem.instr list * allocation*)
+	val alloc : Assem.instr list * Frame.frame -> Temp.temp list * string Temp.Table.table
 end
 structure RegAlloc : REG_ALLOC =
 struct
@@ -15,7 +15,7 @@ struct
 	
 	type allocation = Frame.register Temp.Table.table
 	
-	fun alloc (instList, inFrame) =
+	fun alloc (instList : Assem.instr list, inFrame: Frame.frame) =
 		let
 			val (gr, nlist) = M.instrs2graph(instList)
 			val (intGraph, liveMap) = L.interferenceGraph(gr)
@@ -35,6 +35,6 @@ struct
 						registers=color.Frame.registerList}
 						
 		in
-			(coloredAllocation, spills)
+			(spills, coloredAllocation)
 		end
 end
