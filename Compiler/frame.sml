@@ -9,6 +9,8 @@ sig
 
 	val newFrame : {name: Temp.label,
 					formals: bool list} -> frame
+					
+	val registerList : register list
 	val name : frame -> Temp.label
 	val formals : frame -> access list
 	val allocLocal : frame -> bool -> access
@@ -98,6 +100,8 @@ struct
 	val argRegs = [a0,a1,a2,a3]
 	val calleeSave = [s0,s1,s2,s3,s4,s5,s6,s7]
 	val callerSave = [t0,t1,t2,t3,t4,t5,t6,t7]
+	
+	val registerList = [Reg("zero"), Reg("RV"), Reg("FP"), Reg("SP"), Reg("RA"), Reg("a0"), Reg("a1"), Reg("a2"), Reg("a3"), Reg("s0"), Reg("s1"), Reg("s2"), Reg("s3"), Reg("s4"), Reg("s5"), Reg("s6"), Reg("s7"), Reg("t0"), Reg("t1"), Reg("t2"), Reg("t3"), Reg("t4"), Reg("t5"), Reg("t6"), Reg("t7")]
 
 	(* As per Appel, return NONE for everything except special regs using tempMap definition *)
 	val specialRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0"))]
