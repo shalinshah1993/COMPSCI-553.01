@@ -6,10 +6,10 @@ sig
   	type allocation = Frame.register Temp.Table.table
   
   	val color : {interference: Liveness.igraph,
-				initial: Frame.register Temp.Table.table,
+				initial: allocation,
               	(*spillCost: Graph.node -> int,*)
               	registers: Frame.register list}
-              	-> Frame.register Temp.Table.table * Temp.temp list  
+              	-> allocation * Temp.temp list  
 end
 structure color :> COLOR 
 = 
