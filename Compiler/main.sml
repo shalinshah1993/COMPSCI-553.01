@@ -24,7 +24,7 @@ structure Main = struct
       val _ = Liveness.show(TextIO.stdOut, igraph)*)
 	  (* End test *)
       val format0 = Assem.format(Temp.makestring)
-	  val format1 = Assem.format(fn (t) => ("$" ^ valOf(Temp.Table.look(allocation, t))))
+	  val format1 = Assem.format(fn (t) => ("$" ^ (case valOf(Temp.Table.look(allocation, t)) of F.Reg(x) => x)))
     in  
       app (fn i => TextIO.output(out,format0 i)) instrs
     end
