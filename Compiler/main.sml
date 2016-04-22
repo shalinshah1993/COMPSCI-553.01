@@ -4,6 +4,7 @@ structure Main = struct
   structure F = MIPSFrame
   structure S = Symbol
   structure R = RegAlloc
+  structure C = color
 
   fun getsome (SOME x) = x
 
@@ -15,8 +16,8 @@ structure Main = struct
       (*val _ = app (fn s => Printtree.printtree(out,s)) stms*)
       val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
       val instrs =   List.concat(map (MIPSGen.codegen frame) stms') 
-	  val {prolog, epilog, body=instrs'} = MIPSFrame.procEntryExit3(frame, instrs)
-	  val (instrs'', allocation) = R.alloc(instrs', frame)
+  	  val {prolog, epilog, body=instrs'} = MIPSFrame.procEntryExit3(frame, instrs)
+  	  val (instrs'', allocation) = R.alloc(instrs', frame)
 	  
 	  (* Test for liveness *)
 	  (*val (g, nodelist) = MakeGraph.instrs2graph(instrs)
@@ -24,7 +25,7 @@ structure Main = struct
       val _ = Liveness.show(TextIO.stdOut, igraph)*)
 	  (* End test *)
       val format0 = Assem.format(Temp.makestring)
-	  val format1 = Assem.format(fn (t) => ("$" ^ (case valOf(Temp.Table.look(allocation, t)) of F.Reg(x) => x)))
+      val format1 = Assem.format(fn (t) => ("$" ^ (case valOf(Temp.Table.look(allocation, t)) of C.Frame.Reg(x) => x)))
     in  
       app (fn i => TextIO.output(out,format0 i)) instrs
     end
