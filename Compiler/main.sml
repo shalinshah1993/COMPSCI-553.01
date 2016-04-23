@@ -17,19 +17,21 @@ struct
         val stms = Canon.linearize body
         (*val _ = app (fn s => Printtree.printtree(out,s)) stms*)
         val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
-        val instrs =   List.concat(map (MIPSGen.codegen frame) stms') 
-        val {prolog, epilog, body=instrs'} = MIPSFrame.procEntryExit3(frame, instrs)
-        val (instrs'', allocation) = R.alloc(instrs', frame)
+        val instrs = List.concat(map (MIPSGen.codegen frame) stms') 
+        val instrs' = F.procEntryExit2(frame, instrs)
 
-        (* Test for liveness *)
-        (*val (g, nodelist) = MakeGraph.instrs2graph(instrs)
+        val (g, nodelist) = MakeGraph.instrs2graph(instrs)
         val (igraph, liveoutmapping) = Liveness.interferenceGraph(g)
-        val _ = Liveness.show(TextIO.stdOut, igraph)*)
-        (* End test *)
+        (*val _ = Liveness.show(TextIO.stdOut, igraph)*)
         val format0 = Assem.format(Temp.makestring)
+        
+        val {prolog=prolog, body=body', epilog=epilog} = MIPSFrame.procEntryExit3(frame, instrs)
+        val (instrs'', allocation) = R.alloc(instrs', frame)
         val format1 = Assem.format(fn (t) => ("$" ^ (case valOf(Temp.Table.look(allocation, t)) of C.Frame.Reg(x) => x)))
     in  
-        app (fn i => TextIO.output(out,format0 i)) instrs
+        TextIO.output(out, prolog);
+        app (fn i => TextIO.output(out,format0 i)) body';
+        TextIO.output(out, epilog)
     end
     | emitproc out (F.STRING(lab,s)) = TextIO.output(out,s)
 
