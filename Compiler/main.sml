@@ -4,41 +4,40 @@ struct
 
     structure Tr = Translate
     structure F = MIPSFrame
+    structure Gen = MIPSGen
     structure S = Symbol
     structure R = RegAlloc
     structure C = color
 
     fun getsome (SOME x) = x
 
-    fun emitproc out (F.PROC{body,frame}) =
-    let 
-        (*val _ = print ("emit " ^ S.name(F.name frame) ^ "\n")
-        val _ = Printtree.printtree(out,body)*)
-        val stms = Canon.linearize body
-        val _ = app (fn s => Printtree.printtree(out,s)) stms
-        val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
-        val instrs = List.concat(map (MIPSGen.codegen frame) stms') 
-        val instrs' = F.procEntryExit2(frame, instrs)
+    fun emitproc out (instrs, alloc, frame) =
+    let
+        val _ = print ("emit " ^ Symbol.name(F.name frame) ^ "\n")
+        val format0 = Assem.format(alloc)
+        val {prolog=prolog,body=bodyInstrs,epilog=epilog} = F.procEntryExit3(frame,instrs)
+        (* get rid of any silly move instrs that have the same src and dest *)
+        val instrs' = List.filter (fn Assem.MOVE {assem, dst, src} =>
+                                        alloc dst <> alloc src
+                                    | _ => true)
+                                 bodyInstrs
+    in
+        TextIO.output(out,prolog);
+        app (fn i => TextIO.output(out,format0 i)) instrs';
+        TextIO.output(out,epilog)
+    end    
 
-        val (g, nodelist) = MakeGraph.instrs2graph(instrs)
-        val (igraph, liveoutmapping) = Liveness.interferenceGraph(g)
-        val _ = Liveness.show(TextIO.stdOut, igraph)
-        val format0 = Assem.format(Temp.makestring)
-        
-        val {prolog=prolog, body=body', epilog=epilog} = MIPSFrame.procEntryExit3(frame, instrs')
-        val (instrs'', allocation) = R.alloc(instrs', frame)
-		
-		val format1 = Assem.format(fn (t) => case Temp.Table.look(allocation,t) of
-												NONE => ""
-												| a => ("$" ^ (case valOf(a) of C.Frame.Reg(x) => x)))
-		
-        (*val format1 = Assem.format(fn (t) => ("$" ^ (case valOf(Temp.Table.look(allocation, t)) of C.Frame.Reg(x) => x)))*)
-    in  
-        TextIO.output(out, prolog);
-        app (fn i => TextIO.output(out,format1 i)) body';
-        TextIO.output(out, epilog)
+    fun emitstr out (lab, s) = TextIO.output(out, s)
+
+    fun genInstrs({body,frame}) =
+    let
+        val stms = Canon.linearize body
+        val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
+        val instrs = List.concat(map (Gen.codegen(frame)) stms') 
+        val instrs' = F.procEntryExit2(frame, instrs)
+    in
+        instrs'
     end
-    | emitproc out (F.STRING(lab,s)) = TextIO.output(out,s)
 
     fun withOpenFile fname f = 
     let 
@@ -52,9 +51,19 @@ struct
     let 
         val absyn = Parse.parse filename
         (* val frags = (FindEscape.prog absyn; Semant.transProg absyn) *)
-        val frags = Semant.transProg absyn
+        val {frags, ty} = Semant.transProg absyn
+
+        fun sepFrags(F.STRING(str), (procs,strs)) = (procs,strs @ [str])
+              | sepFrags(F.PROC(proc), (procs,strs)) = (procs @ [proc],strs)
+
+        val (procs, strs) = foldr sepFrags ([],[]) frags
+        val procInstrs = map (fn (p as {body,frame}) => (genInstrs(p), frame)) procs
+        val allocedProcs = map R.alloc procInstrs
+        val allocedProcReg = map (fn (instr,alloc, frame) => 
+                            (instr, (fn t => (case Temp.Table.look(alloc,t) of SOME(C.Frame.Reg(x)) => x | NONE => "Grr!")), frame)) allocedProcs
+
     in 
-        withOpenFile (filename ^ ".s") 
-        (fn out => (app (emitproc out) (#frags frags)))
+        withOpenFile (filename ^ ".s") (fn out => ((app (emitstr out) strs);
+                                                  (app (emitproc out) allocedProcReg)))
     end
 end
