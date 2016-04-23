@@ -16,7 +16,6 @@ struct
         val _ = print ("emit " ^ Symbol.name(F.name frame) ^ "\n")
         val format0 = Assem.format(alloc)
         val {prolog=prolog,body=bodyInstrs,epilog=epilog} = F.procEntryExit3(frame,instrs)
-        (* get rid of any silly move instrs that have the same src and dest *)
         val instrs' = List.filter (fn Assem.MOVE {assem, dst, src} =>
                                         alloc dst <> alloc src
                                     | _ => true)
@@ -59,9 +58,7 @@ struct
         val (procs, strs) = foldr sepFrags ([],[]) frags
         val procInstrs = map (fn (p as {body,frame}) => (genInstrs(p), frame)) procs
         val allocedProcs = map R.alloc procInstrs
-        val allocedProcReg = map (fn (instr,alloc, frame) => 
-                            (instr, (fn t => (case Temp.Table.look(alloc,t) of SOME(C.Frame.Reg(x)) => x | NONE => "Grr!")), frame)) allocedProcs
-
+        val allocedProcReg = map (fn (instr, colored, frame) => (instr, (fn t => (case Temp.Table.look(colored, t) of SOME(C.Frame.Reg(x)) => (print ((Int.toString(t))^" SOME\n"); "$"^x) | NONE => (print ((Int.toString(t))^" NONE\n"); "Grr!"))), frame)) allocedProcs
     in 
         withOpenFile (filename ^ ".s") (fn out => ((app (emitstr out) strs);
                                                   (app (emitproc out) allocedProcReg)))
