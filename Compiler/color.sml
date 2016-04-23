@@ -106,7 +106,7 @@ struct
                 degree := G.Table.enter(!degree, tnode(m), oldDegree - 1);
                 (
                 	if oldDegree = K then
-                    	(print ((Int.toString(length(nodeSet.listItems(!simplifyWorklist))))^" delte\n"); 
+                    	(print ((Int.toString(m))^" deleting\n"); 
                             if nodeSet.member(!spillWorklist, m) then (spillWorklist := nodeSet.delete(!spillWorklist, m); ()) else ();
                             simplifyWorklist := nodeSet.add(!simplifyWorklist, m))
                 	else 
@@ -122,7 +122,7 @@ struct
 		let
 			val simplifyListHead::others = nodeSet.listItems(!simplifyWorklist)
 		in
-            (*print ((Int.toString(length(nodeSet.listItems(!simplifyWorklist))))^" simplify\n");*)
+            print ((Int.toString(simplifyListHead))^" deleting simplify\n"); 
             if nodeSet.member(!simplifyWorklist, simplifyListHead) then (simplifyWorklist := nodeSet.delete(!simplifyWorklist, simplifyListHead); ()) else ();
             selectStack := nodeSet.add(!selectStack, simplifyListHead);			
             nodeSet.app (decrementDegree) (neighbours(simplifyListHead))
@@ -133,7 +133,7 @@ struct
 		let
 			val spillListHead::other = nodeSet.listItems(!spillWorklist)
 		in
-            (*print ((Int.toString(length(nodeSet.listItems(!spillWorklist))))^" selectSpill\n");*)
+            print ((Int.toString(spillListHead))^" deleting selectSpill\n"); 
             if nodeSet.member(!spillWorklist, spillListHead) then (spillWorklist := nodeSet.delete(!spillWorklist, spillListHead); ()) else ();
 			simplifyWorklist := nodeSet.add(!simplifyWorklist, spillListHead)
 		end
@@ -141,12 +141,13 @@ struct
 		fun assignColors() = 
 		let
 			(* pop item off select stack *)
-			val n::others = nodeSet.listItems(!selectStack)
+			val n::rest = nodeSet.listItems(!selectStack)
 
+            val _ = print ((Int.toString(n))^" deleting assignColor\n"); 
 			val _ = if nodeSet.member(!selectStack, n) then (nodeSet.delete(!selectStack, n); ()) else (); 
 
 			val okColors = ref (regSet.addList(regSet.empty, registers))
-			val SOME(adjList) = G.Table.look(adjList, tnode n)
+			val SOME(adjlist) = G.Table.look(adjList, tnode n)
 			(* Add all the precolored and already colored node to a set *)
 			val colored = ref (nodeSet.addList(nodeSet.empty, nodeSet.listItems(!coloredNodes)))
 			val _ = (colored := nodeSet.addList(!colored, map gtemp precolored))
@@ -155,15 +156,17 @@ struct
 			let
 			 	val nodeID = (case Tp.Table.look(!color, gtemp(node)) of SOME(x) => x | _ => MIPSFrame.Reg("x"))
 			 in
+                print ((Int.toString(gtemp node))^" deleting assignColor removeColorNode\n"); 
 			 	if nodeSet.member(!colored, gtemp node) then 
-			 		okColors := regSet.delete(!okColors, nodeID)
+                        if regSet.member(!okColors, nodeID) then okColors := regSet.delete(!okColors, nodeID) else ()
 			 	else
 			 		()
 			 end 
 		in
-			if length(nodeSet.listItems(!selectStack)) <> 0 then
+			if length(nodeSet.listItems(!selectStack)) > 0 then
 			(
-				app removeColorNode adjList;
+                selectStack := nodeSet.delete(!selectStack, n);
+				app removeColorNode adjlist;
 				if length(regSet.listItems(!okColors)) = 0 then 
 					spilledNodes := nodeSet.add(!spilledNodes, n)
 				else
@@ -171,6 +174,7 @@ struct
 					coloredNodes := nodeSet.add(!coloredNodes, n);
 					let
 						val colorOfNode::others = regSet.listItems(!okColors)
+                        val _ = print (" deleting assignColor\n"); 
 						val _ = if regSet.member(!okColors, colorOfNode) then (regSet.delete(!okColors, colorOfNode); ()) else ();
 					in
 						color := Tp.Table.enter(!color, n, colorOfNode)
