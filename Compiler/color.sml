@@ -19,11 +19,11 @@ struct
 	structure Tp = Temp
 	structure L = Liveness
 
-	structure nodeSet = ListSetFn(struct
+	structure nodeSet = BinarySetFn(struct
 									type ord_key = Tp.temp
 									val compare = Int.compare
 								  	end)
-	structure regSet = ListSetFn(struct
+	structure regSet = BinarySetFn(struct
 									type ord_key = Frame.register
 									fun compare(a, b) = 
 										let
@@ -58,13 +58,13 @@ struct
 		fun checkIfPrecolored(node) =
         (
         	case Tp.Table.look(initial, gtemp(node)) of
-      			SOME(MIPSFrame.Reg(regname))  => true
-           	|  	NONE => false
+      			SOME(MIPSFrame.Reg(regname))  => (print ((Int.toString(gtemp node))^" looking \n"); true)
+           	|  	NONE => (print ((Int.toString(gtemp node))^" looking \n"); false)
         )
         (* List of pre-colored and non-precolored nodes *)
         val (precolored, uncolored) = List.partition checkIfPrecolored nodes
-
-		fun mapNodeWithAdj ((node,value), t) = G.Table.enter(t, node, value)	
+        
+		fun mapNodeWithAdj ((node,value), t) = (print ((Int.toString(gtemp node))^" entered \n"); G.Table.enter(t, node, value))
         fun getAdjCount (node) = length(G.adj node)
 
 		(* degree - an array containing current degree of each node *)
@@ -86,9 +86,10 @@ struct
 
 		fun neighbours(node) =
         let
-            val SOME(adjNodes) = G.Table.look(adjList, node)
+            val SOME(adjNodes) = G.Table.look(adjList, tnode node)
             val adjNodesSet = nodeSet.addList(nodeSet.empty, map gtemp adjNodes)
             val selectSet = nodeSet.addList(nodeSet.empty, nodeSet.listItems(!selectStack))
+            (*val _ = (print ((Int.toString(length(nodeSet.listItems(nodeSet.difference(adjNodesSet, selectSet)))))^" oooo\n"); 1)*)
         in
             nodeSet.difference(adjNodesSet, selectSet)
         end
@@ -96,17 +97,23 @@ struct
 		(* Decrement out for all the adjNode of node simplified *)
 		fun decrementDegree(m) =
         let
-        	val oldDegree = case G.Table.look(!degree, tnode(m)) of
-        		SOME(x) => x
-        		| _ => (print "Compiler Error in assigning register colors\n"; 0)        	
+            (*val _ = (print ((Int.toString(m))^"adasda \n"); 1)*)
+        	val oldDegree = case G.Table.look(!degree, tnode(m)) of SOME(x) => x | NONE => 0  
+            (*val _ = (print ("blal oooo\n"); 1)*)
         in
-            degree := G.Table.enter(!degree, tnode(m), oldDegree - 1);
+            if oldDegree <> 0 then 
             (
-            	if oldDegree = K then
-                	(spillWorklist := nodeSet.delete(!spillWorklist, m); simplifyWorklist := nodeSet.add(!simplifyWorklist, m))
-            	else 
-            		()
+                degree := G.Table.enter(!degree, tnode(m), oldDegree - 1);
+                (
+                	if oldDegree = K then
+                    	(print ((Int.toString(length(nodeSet.listItems(!simplifyWorklist))))^" oooo\n"); 
+                        spillWorklist := nodeSet.delete(!spillWorklist, m); simplifyWorklist := nodeSet.add(!simplifyWorklist, m))
+                	else 
+                		()
+                )
             )
+            else
+                ()
         end
 
 		(* As per appel's algo on page 246 *)
@@ -115,8 +122,8 @@ struct
 			val simplifyListHead::others = nodeSet.listItems(!simplifyWorklist)
 		in
 			simplifyWorklist := nodeSet.delete(!simplifyWorklist, simplifyListHead);
-			selectStack := nodeSet.add(!selectStack, simplifyListHead);
-			nodeSet.app (decrementDegree) (neighbours(tnode(simplifyListHead)))
+            selectStack := nodeSet.add(!selectStack, simplifyListHead);			
+            nodeSet.app (decrementDegree) (neighbours(simplifyListHead))
 		end
 
 		(* As per appel's algo on 248. I'm not using any heuristics, just the simplistic case remove first element *)
@@ -142,7 +149,7 @@ struct
 
 			fun removeColorNode (node) =
 			let
-			 	val nodeID = case Tp.Table.look(!color, gtemp(node)) of SOME(x) => x | _ => (print "Compiler Error while assigning colors to registers\n"; Frame.Reg("0"))
+			 	val nodeID = (case Tp.Table.look(!color, gtemp(node)) of SOME(x) => x | _ => MIPSFrame.Reg("x"))
 			 in
 			 	if nodeSet.member(!colored, gtemp node) then 
 			 		okColors := regSet.delete(!okColors, nodeID)

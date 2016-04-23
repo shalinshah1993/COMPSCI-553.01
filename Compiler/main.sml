@@ -22,7 +22,7 @@ struct
 
         val (g, nodelist) = MakeGraph.instrs2graph(instrs)
         val (igraph, liveoutmapping) = Liveness.interferenceGraph(g)
-        (*val _ = Liveness.show(TextIO.stdOut, igraph)*)
+        val _ = Liveness.show(TextIO.stdOut, igraph)
         val format0 = Assem.format(Temp.makestring)
         
         val {prolog=prolog, body=body', epilog=epilog} = MIPSFrame.procEntryExit3(frame, instrs)
