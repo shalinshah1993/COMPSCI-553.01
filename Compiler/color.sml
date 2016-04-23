@@ -139,52 +139,56 @@ struct
 		end
 
 		fun assignColors() = 
-		let
-			(* pop item off select stack *)
-			val n::rest = nodeSet.listItems(!selectStack)
-
-            val _ = print ((Int.toString(n))^" deleting assignColor\n"); 
-			val _ = if nodeSet.member(!selectStack, n) then (nodeSet.delete(!selectStack, n); ()) else (); 
-
-			val okColors = ref (regSet.addList(regSet.empty, registers))
-			val SOME(adjlist) = G.Table.look(adjList, tnode n)
-			(* Add all the precolored and already colored node to a set *)
-			val colored = ref (nodeSet.addList(nodeSet.empty, nodeSet.listItems(!coloredNodes)))
-			val _ = (colored := nodeSet.addList(!colored, map gtemp precolored))
-
-			fun removeColorNode (node) =
-			let
-			 	val nodeID = (case Tp.Table.look(!color, gtemp(node)) of SOME(x) => x | _ => MIPSFrame.Reg("x"))
-			 in
-                print ((Int.toString(gtemp node))^" deleting assignColor removeColorNode\n"); 
-			 	if nodeSet.member(!colored, gtemp node) then 
-                        if regSet.member(!okColors, nodeID) then okColors := regSet.delete(!okColors, nodeID) else ()
-			 	else
-			 		()
-			 end 
-		in
-			if length(nodeSet.listItems(!selectStack)) > 0 then
-			(
-                selectStack := nodeSet.delete(!selectStack, n);
-				app removeColorNode adjlist;
-				if length(regSet.listItems(!okColors)) = 0 then 
-					spilledNodes := nodeSet.add(!spilledNodes, n)
-				else
-				(
-					coloredNodes := nodeSet.add(!coloredNodes, n);
+			case nodeSet.listItems(!selectStack) of
+				[] => ()
+				| _ =>
 					let
-						val colorOfNode::others = regSet.listItems(!okColors)
-                        val _ = print (" deleting assignColor\n"); 
-						val _ = if regSet.member(!okColors, colorOfNode) then (regSet.delete(!okColors, colorOfNode); ()) else ();
+						(* pop item off select stack *)
+						val n::rest = nodeSet.listItems(!selectStack)
+
+						val _ = print ((Int.toString(n))^" deleting assignColor\n"); 
+						val _ = if nodeSet.member(!selectStack, n) then (nodeSet.delete(!selectStack, n); ()) else (); 
+
+						val okColors = ref (regSet.addList(regSet.empty, registers))
+						val SOME(adjlist) = G.Table.look(adjList, tnode n)
+						(* Add all the precolored and already colored node to a set *)
+						val colored = ref (nodeSet.addList(nodeSet.empty, nodeSet.listItems(!coloredNodes)))
+						val _ = (colored := nodeSet.addList(!colored, map gtemp precolored))
+
+						fun removeColorNode (node) =
+						let
+							val nodeID = (case Tp.Table.look(!color, gtemp(node)) of SOME(x) => x | _ => MIPSFrame.Reg("x"))
+						 in
+							print ((Int.toString(gtemp node))^" deleting assignColor removeColorNode\n"); 
+							if nodeSet.member(!colored, gtemp node) then 
+									if regSet.member(!okColors, nodeID) then okColors := regSet.delete(!okColors, nodeID) else ()
+							else
+								()
+						 end 
 					in
-						color := Tp.Table.enter(!color, n, colorOfNode)
+						if length(nodeSet.listItems(!selectStack)) > 0 then
+						(
+							selectStack := nodeSet.delete(!selectStack, n);
+							app removeColorNode adjlist;
+							if length(regSet.listItems(!okColors)) = 0 then 
+								spilledNodes := nodeSet.add(!spilledNodes, n)
+							else
+							(
+								coloredNodes := nodeSet.add(!coloredNodes, n);
+								let
+									val colorOfNode::others = regSet.listItems(!okColors)
+									val _ = print (" deleting assignColor\n"); 
+									val _ = if regSet.member(!okColors, colorOfNode) then (regSet.delete(!okColors, colorOfNode); ()) else ();
+								in
+									color := Tp.Table.enter(!color, n, colorOfNode)
+								end
+							)
+						)
+						else
+						();
+						assignColors()
 					end
-				)
-			)
-			else
-			();
-			assignColors()
-		end
+		
 				
 		fun Main () =
 			(* init lists already made so keep doing this in loop till they are empty *)

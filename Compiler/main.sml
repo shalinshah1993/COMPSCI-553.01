@@ -15,7 +15,7 @@ struct
         (*val _ = print ("emit " ^ S.name(F.name frame) ^ "\n")
         val _ = Printtree.printtree(out,body)*)
         val stms = Canon.linearize body
-        (*val _ = app (fn s => Printtree.printtree(out,s)) stms*)
+        val _ = app (fn s => Printtree.printtree(out,s)) stms
         val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
         val instrs = List.concat(map (MIPSGen.codegen frame) stms') 
         val instrs' = F.procEntryExit2(frame, instrs)
@@ -25,12 +25,17 @@ struct
         val _ = Liveness.show(TextIO.stdOut, igraph)
         val format0 = Assem.format(Temp.makestring)
         
-        val {prolog=prolog, body=body', epilog=epilog} = MIPSFrame.procEntryExit3(frame, instrs)
+        val {prolog=prolog, body=body', epilog=epilog} = MIPSFrame.procEntryExit3(frame, instrs')
         val (instrs'', allocation) = R.alloc(instrs', frame)
-        val format1 = Assem.format(fn (t) => ("$" ^ (case valOf(Temp.Table.look(allocation, t)) of C.Frame.Reg(x) => x)))
+		
+		val format1 = Assem.format(fn (t) => case Temp.Table.look(allocation,t) of
+												NONE => ""
+												| a => ("$" ^ (case valOf(a) of C.Frame.Reg(x) => x)))
+		
+        (*val format1 = Assem.format(fn (t) => ("$" ^ (case valOf(Temp.Table.look(allocation, t)) of C.Frame.Reg(x) => x)))*)
     in  
         TextIO.output(out, prolog);
-        app (fn i => TextIO.output(out,format0 i)) body';
+        app (fn i => TextIO.output(out,format1 i)) body';
         TextIO.output(out, epilog)
     end
     | emitproc out (F.STRING(lab,s)) = TextIO.output(out,s)
