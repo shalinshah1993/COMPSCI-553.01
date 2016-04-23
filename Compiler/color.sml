@@ -106,8 +106,9 @@ struct
                 degree := G.Table.enter(!degree, tnode(m), oldDegree - 1);
                 (
                 	if oldDegree = K then
-                    	(print ((Int.toString(length(nodeSet.listItems(!simplifyWorklist))))^" oooo\n"); 
-                        spillWorklist := nodeSet.delete(!spillWorklist, m); simplifyWorklist := nodeSet.add(!simplifyWorklist, m))
+                    	(print ((Int.toString(length(nodeSet.listItems(!simplifyWorklist))))^" delte\n"); 
+                            if nodeSet.member(!spillWorklist, m) then (spillWorklist := nodeSet.delete(!spillWorklist, m); ()) else ();
+                            simplifyWorklist := nodeSet.add(!simplifyWorklist, m))
                 	else 
                 		()
                 )
@@ -121,7 +122,8 @@ struct
 		let
 			val simplifyListHead::others = nodeSet.listItems(!simplifyWorklist)
 		in
-			simplifyWorklist := nodeSet.delete(!simplifyWorklist, simplifyListHead);
+            (*print ((Int.toString(length(nodeSet.listItems(!simplifyWorklist))))^" simplify\n");*)
+            if nodeSet.member(!simplifyWorklist, simplifyListHead) then (simplifyWorklist := nodeSet.delete(!simplifyWorklist, simplifyListHead); ()) else ();
             selectStack := nodeSet.add(!selectStack, simplifyListHead);			
             nodeSet.app (decrementDegree) (neighbours(simplifyListHead))
 		end
@@ -131,7 +133,8 @@ struct
 		let
 			val spillListHead::other = nodeSet.listItems(!spillWorklist)
 		in
-			spillWorklist := nodeSet.delete(!spillWorklist, spillListHead);
+            (*print ((Int.toString(length(nodeSet.listItems(!spillWorklist))))^" selectSpill\n");*)
+            if nodeSet.member(!spillWorklist, spillListHead) then (spillWorklist := nodeSet.delete(!spillWorklist, spillListHead); ()) else ();
 			simplifyWorklist := nodeSet.add(!simplifyWorklist, spillListHead)
 		end
 
@@ -139,7 +142,8 @@ struct
 		let
 			(* pop item off select stack *)
 			val n::others = nodeSet.listItems(!selectStack)
-			val _ = nodeSet.delete(!selectStack, n)
+
+			val _ = if nodeSet.member(!selectStack, n) then (nodeSet.delete(!selectStack, n); ()) else (); 
 
 			val okColors = ref (regSet.addList(regSet.empty, registers))
 			val SOME(adjList) = G.Table.look(adjList, tnode n)
@@ -167,7 +171,7 @@ struct
 					coloredNodes := nodeSet.add(!coloredNodes, n);
 					let
 						val colorOfNode::others = regSet.listItems(!okColors)
-						val _ = regSet.delete(!okColors, colorOfNode)
+						val _ = if regSet.member(!okColors, colorOfNode) then (regSet.delete(!okColors, colorOfNode); ()) else ();
 					in
 						color := Tp.Table.enter(!color, n, colorOfNode)
 					end
