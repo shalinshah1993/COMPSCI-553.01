@@ -48,6 +48,7 @@ struct
 
     fun compile filename = 
     let 
+        val outfile = TextIO.openOut ("output.txt")
         val absyn = Parse.parse filename
         (* val frags = (FindEscape.prog absyn; Semant.transProg absyn) *)
         val {frags, ty} = Semant.transProg absyn
@@ -60,7 +61,17 @@ struct
         val allocedProcs = map R.alloc procInstrs
         val allocedProcReg = map (fn (instr, colored, frame) => (instr, (fn t => (case Temp.Table.look(colored, t) of SOME(C.Frame.Reg(x)) => (print ((Int.toString(t))^" SOME\n"); "$"^x) | NONE => (print ((Int.toString(t))^" NONE\n"); "THIS IS A FAILURE " ^ Int.toString(t)))), frame)) allocedProcs
     in 
-        withOpenFile (filename ^ ".s") (fn out => ((app (emitstr out) strs);
-                                                  (app (emitproc out) allocedProcReg)))
+       (* withOpenFile (filename ^ ".s") (fn out => ((app (emitstr out) strs);
+                                                  (app (emitproc out) allocedProcReg)))*)
+        TextIO.output(outfile,"----COMPILER MOUNTAIN PRINT-OUT----\n\nPrinting AST\n\n");                                          
+        PrintAbsyn.print(outfile, absyn);
+        TextIO.output(outfile,"\n\nPrinting IR\n\n");
+        app (fn s => Printtree.printtree(outfile,#body s)) procs;
+        TextIO.output(outfile,"\n\nPrinting Linearized IR\n\n");
+        app (fn s => Printtree.printtree(outfile, s)) (List.concat(map (fn s => (Canon.linearize (#body s))) procs));
+        TextIO.output(outfile,"\n\nPrinting Assembly with Temps \n\n");
+        app (fn s => TextIO.output(outfile,(Assem.format(Temp.makestring) s)))  (List.concat(map genInstrs (procs)));
+        TextIO.output(outfile,"\n\nPrinting Assembly with Regs \n\n");
+        app (emitproc outfile) allocedProcReg
     end
 end
