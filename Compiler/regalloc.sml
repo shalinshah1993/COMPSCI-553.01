@@ -20,12 +20,12 @@ struct
 			val (gr, nlist) = M.instrs2graph(instList)
 			val (intGraph, liveMap) = L.interferenceGraph(gr)
 			
-			val allocationMap = color.Frame.tempMap
+			val allocationMap = C.Frame.tempMap
 
 			val (coloredAllocation, spills) =
 				C.color{interference=intGraph,
 						initial=allocationMap,
-						registers=color.Frame.registerList}
+						registers=C.Frame.registerList}
 						
 		in
 			(instList, coloredAllocation, inFrame)

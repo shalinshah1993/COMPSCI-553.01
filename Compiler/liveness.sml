@@ -1,5 +1,6 @@
 signature LIVENESS =
 sig
+	structure G : GRAPH
 	datatype igraph =
 		IGRAPH of {graph: Flow.Graph.graph,
 					tnode: Temp.temp -> Flow.Graph.node,
