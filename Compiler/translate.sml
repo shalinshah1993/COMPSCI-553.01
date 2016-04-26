@@ -231,7 +231,7 @@ struct
 			 val startAdd = T.TEMP(Te.newtemp())
 		in
 
-			Ex (T.ESEQ(T.MOVE(startAdd, F.externalCall("initArray", [unEx(length), unEx(initVal)])), startAdd))
+			Ex (T.ESEQ(T.MOVE(startAdd, F.externalCall("tig_initArray", [unEx(length), unEx(initVal)])), startAdd))
 		end
 
 	(* Instead of start address, return TEMP(r) as per appel *)
@@ -278,7 +278,7 @@ struct
 			val frame = frame
 			val body' = F.procEntryExit1(frame, unNx(body))
 			val moveStm = T.MOVE((T.TEMP F.RV), unEx (Nx body'))
-			val frag = F.PROC({body=body',frame=frame})
+			val frag = F.PROC({body=moveStm,frame=frame})
 			val _ = (fraglist := frag::(!fraglist))
 		in
 			()

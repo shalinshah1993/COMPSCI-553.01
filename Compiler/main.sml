@@ -9,6 +9,20 @@ struct
     structure R = RegAlloc
     structure C = color
 
+
+    fun printRunTimeFiles (out) = 
+    let
+        val runTime = TextIO.openIn "runtimele.s"
+        val sysSpim = TextIO.openIn "sysspim.s"
+        fun process(inStream) = (case TextIO.inputLine inStream of
+                              SOME(l) => (TextIO.output(out, l); process(inStream))
+                              | NONE => ())
+    in
+        (TextIO.output(out, "\n");
+        process(runTime);
+        process(sysSpim))
+    end
+
     fun getsome (SOME x) = x
 
     fun emitproc out (instrs, alloc, frame) =
@@ -59,7 +73,7 @@ struct
         val (procs, strs) = foldr sepFrags ([],[]) frags
         val procInstrs = map (fn (p as {body,frame}) => (genInstrs(p), frame)) procs
         val allocedProcs = map R.alloc procInstrs
-        val allocedProcReg = map (fn (instr, colored, frame) => (instr, (fn t => (case Temp.Table.look(colored, t) of SOME(C.Frame.Reg(x)) => (print ((Int.toString(t))^" SOME\n"); "$"^x) | NONE => (print ((Int.toString(t))^" NONE\n"); "THIS IS A FAILURE " ^ Int.toString(t)))), frame)) allocedProcs
+        val allocedProcReg = map (fn (instr, colored, frame) => (instr, (fn t => (case Temp.Table.look(colored, t) of SOME(C.Frame.Reg(x)) => (print ((Int.toString(t))^" SOME\n"); x) | NONE => (print ((Int.toString(t))^" NONE\n"); "THIS IS A FAILURE " ^ Int.toString(t)))), frame)) allocedProcs
     in 
        (* withOpenFile (filename ^ ".s") (fn out => ((app (emitstr out) strs);
                                                   (app (emitproc out) allocedProcReg)))*)
@@ -72,6 +86,7 @@ struct
         TextIO.output(outfile,"\n\nPrinting Assembly with Temps \n\n");
         app (fn s => TextIO.output(outfile,(Assem.format(Temp.makestring) s)))  (List.concat(map genInstrs (procs)));
         TextIO.output(outfile,"\n\nPrinting Assembly with Regs \n\n");
-        app (emitproc outfile) allocedProcReg
+        app (emitproc outfile) allocedProcReg;
+        printRunTimeFiles outfile
     end
 end

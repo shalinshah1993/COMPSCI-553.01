@@ -234,11 +234,11 @@ struct
 					dst=[r],
 					jump=NONE})))
 			| munchExp(T.CALL(T.NAME(e), args))= 	
-				(result(fn r => emit(A.OPER{
+				(emit(A.OPER{
 					assem="jal "^S.name(e)^"\n",
 					src=munchArgs(0, args),
 					dst=[F.RV],
-					jump=NONE})))										
+					jump=NONE}); F.RV)										
 			and munchArgs (i, []) = []
 			| munchArgs(i, a::l) =
 				let
