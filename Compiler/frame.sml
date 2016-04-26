@@ -132,7 +132,7 @@ struct
 	
 	fun getTempString(temp) =
 		case Tp.Table.look(tempMap, temp) of 
-		  	NONE => Tp.makestring(temp)
+		  	NONE => ("$"^Tp.makestring(temp))
 		    | SOME(Reg(regName)) => regName
 	
 	(* can store on register or in frame on memory *)
