@@ -273,17 +273,19 @@ struct
 			Ex (T.MEM(T.BINOP(T.PLUS, varExp, offsetExp)))
 		end
 		
-	fun procEntryExit({level=Level ({frame=frame, parent=parent}, unique), body=body}) =
+	fun procEntryExit({level=Level ({frame=f:F.frame, parent=parent}, unique), body=body}) =
 		let
-			val frame = frame
-			val body' = F.procEntryExit1(frame, unNx(body))
+			val frameLabel = T.LABEL(F.name f)
+			val body' = F.procEntryExit1(f, unNx(body))
 			val moveStm = T.MOVE((T.TEMP F.RV), unEx (Nx body'))
-			val frag = F.PROC({body=moveStm,frame=frame})
+			val addLabel = seq[frameLabel, moveStm]
+			val frag = F.PROC({body=addLabel,frame=f})
 			val _ = (fraglist := frag::(!fraglist))
 		in
 			()
 		end
 
   fun resetFrags() = (fraglist := []; ())
-  fun getResult () = !fraglist
+
+  fun getResult() = !fraglist
 end
