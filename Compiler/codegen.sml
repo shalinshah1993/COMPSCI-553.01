@@ -65,7 +65,7 @@ struct
 					dst=[],
 					jump=SOME(labList)}))
 			| munchStm(T.CJUMP(oper, e1, e2, trueLabel, falseLabel)) =
-				(emit(A.OPER{assem=(relopToAssem(oper)) ^ " `s0, `s1, " ^ S.name(trueLabel) ^ "\n j " ^ S.name(falseLabel) ^ "\n",
+				(emit(A.OPER{assem=(relopToAssem(oper)) ^ " `s0, `s1, " ^ S.name(trueLabel) ^ "\n\t\tj " ^ S.name(falseLabel) ^ "\n",
 					src=[munchExp e1, munchExp e2],
 					dst=[],
 					jump=SOME([trueLabel, falseLabel])}))

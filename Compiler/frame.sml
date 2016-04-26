@@ -208,9 +208,9 @@ struct
 				
 	(* Does this part still have JOUETTE in it? *)
 	fun procEntryExit3({name=name, formals=params,offset=locals}:frame, body: Assem.instr list) =
-		{prolog="PROCEDURE " ^ Symbol.name name ^ "\n",
+		{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
 		body=body,
-		epilog= "END " ^ Symbol.name name ^ "\n"}
+		epilog= "\n# END " ^ Symbol.name name ^ "\n"}
 
     fun externalCall(funcName, argList) = Tr.CALL(Tr.NAME(Tp.namedlabel(funcName)), argList)
 

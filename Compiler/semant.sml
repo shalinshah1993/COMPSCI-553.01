@@ -588,8 +588,8 @@ struct
 			val unitResult = Tr.resetFrags()
 			val venv = Env.base_venv
 			val tenv = Env.base_tenv
-			val startLabel = Tmp.namedlabel("begin")
-			val endLabel = Tmp.namedlabel("end")
+			val startLabel = Tmp.namedlabel("MAIN")
+			val endLabel = Tmp.namedlabel("END_MAIN")
 			val firstLevel = Tr.newLevel({parent=Tr.outermost, name=startLabel,formals=[]})
 			val tree = transExp(venv, tenv, expr, firstLevel, endLabel)
 		in
