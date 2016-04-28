@@ -107,9 +107,9 @@ struct
 							val newNode = gtemp node
 						in
 							(coloredNodes := Set.add((!coloredNodes, newNode));
-							(*print (("\nBefore Coloring :") ^ (Int.toString(newNode)) ^ (" we have :") ^ (Frame.getTempString(newNode)) ^ ("\n"));*)
+							print (("\nAvailable Color temp :") ^ (Int.toString(newColor)) ^ (" is register :") ^ (Frame.getTempString(newNode)) ^ ("\n"));
 							colorMap := Tp.Table.enter((!colorMap), newNode, convertTempToReg(newColor));
-							print (("Coloring :") ^ (Int.toString(newNode)) ^ (" with color :") ^ (Frame.getTempString(newNode)) ^ ("\n"));
+							print (("After updated MAP: Coloring :") ^ (Int.toString(newNode)) ^ (" with color :") ^ (Frame.getTempString(newNode)) ^ ("\n"));
 							color := Tp.Table.enter((!color), newNode, newColor));
 							removeColor([newNode])
 						end
