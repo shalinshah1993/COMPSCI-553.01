@@ -209,20 +209,26 @@ struct
 				src=[zero, RA, SP]@calleeSave,
 				dst=[],
 				jump=SOME[]}]
-				
+			
+	fun intToStr i = 
+		if i >= 0 then 
+			Int.toString i
+		else 
+			"-" ^ Int.toString(~i)	
+
 	(* Does this part still have JOUETTE in it? *)
 	fun procEntryExit3({name=name, formals=params,offset=locals}:frame, body: Assem.instr list) =
 		let
 			val totalOffset = (!locals + (List.length argRegs)) * wordSize
 		in
 			{prolog=S.name name ^ ":\n" ^
-					"\tsw\t$fp\t0($sp)\n" ^
-					"\tmove\t$fp\t$sp\n" ^
-					"\taddiu\t$sp\t$sp\t" ^ Int.toString(totalOffset) ^ "\n",
+					"\t\tsw $fp\t0($sp)\n" ^
+					"\t\tmove $fp\t$sp\n" ^
+					"\t\taddiu $sp\t$sp\t" ^ intToStr(totalOffset) ^ "\n",
 			body=body,
-			epilog="\tmove\t$sp\t$fp\n" ^
-              "\tlw\t$fp\t0($sp)\n" ^
-              "\tjr\t$ra\n\n"}
+			epilog="\n\t\tmove $sp $fp\n" ^
+              "\t\tlw $fp\t0($sp)\n" ^
+              "\t\tjr $ra\n\n"}
 		end
 		(*{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
 		body=body,
