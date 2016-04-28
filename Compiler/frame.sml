@@ -212,9 +212,21 @@ struct
 				
 	(* Does this part still have JOUETTE in it? *)
 	fun procEntryExit3({name=name, formals=params,offset=locals}:frame, body: Assem.instr list) =
-		{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
+		let
+			val totalOffset = (!locals + (List.length argRegs)) * wordSize
+		in
+			{prolog=S.name name ^ ":\n" ^
+					"\tsw\t$fp\t0($sp)\n" ^
+					"\tmove\t$fp\t$sp\n" ^
+					"\taddiu\t$sp\t$sp\t" ^ Int.toString(totalOffset) ^ "\n",
+			body=body,
+			epilog="\tmove\t$sp\t$fp\n" ^
+              "\tlw\t$fp\t0($sp)\n" ^
+              "\tjr\t$ra\n\n"}
+		end
+		(*{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
 		body=body,
-		epilog= "\n# END " ^ Symbol.name name ^ "\n"}
+		epilog= "\n# END " ^ Symbol.name name ^ "\n"}*)
 
     fun externalCall(funcName, argList) = Tr.CALL(Tr.NAME(Tp.namedlabel(funcName)), argList)
 
