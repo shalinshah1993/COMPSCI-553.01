@@ -75,8 +75,6 @@ struct
         val allocedProcs = map R.alloc procInstrs
         val allocedProcReg = map (fn (instr, colored, frame) => (instr, (fn t => C.Frame.getColorMapString(colored, t)), frame)) allocedProcs
     in 
-       (* withOpenFile (filename ^ ".s") (fn out => ((app (emitstr out) strs);
-                                                  (app (emitproc out) allocedProcReg)))*)
         TextIO.output(outfile,"----COMPILER MOUNTAIN PRINT-OUT----\n\nPrinting AST\n\n");                                          
         PrintAbsyn.print(outfile, absyn);
         TextIO.output(outfile,"\n\nPrinting IR\n\n");
