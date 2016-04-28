@@ -28,7 +28,7 @@ struct
 	val base_level = Tr.newLevel{parent=Tr.outermost, name=Te.namedlabel("base"), formals=[]}
 
     (* Mapping variable/ function to type/ parameters and return value *)
-    val preDefVar = [("print", FunEntry {level=base_level, label=Te.namedlabel("print"), formals=[T.STRING], result=T.UNIT}), 
+    val preDefVar = [("print", FunEntry {level=base_level, label=Te.namedlabel("printf"), formals=[T.STRING], result=T.UNIT}), 
 			 		("flush", FunEntry {level=base_level, label=Te.namedlabel("flush"), formals=[], result=T.UNIT}), 
 			 		("getchar", FunEntry {level=base_level, label=Te.namedlabel("getchar"), formals=[], result=T.STRING}), 
 			 		("ord", FunEntry {level=base_level, label=Te.namedlabel("ord"), formals=[T.STRING], result=T.INT}), 

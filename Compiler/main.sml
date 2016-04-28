@@ -40,7 +40,7 @@ struct
         TextIO.output(out,epilog)
     end    
 
-    fun emitstr out (lab, s) = TextIO.output(out, s)
+    fun emitstr out (lab, s) = TextIO.output(out, F.toString(lab, s))
 
     fun genInstrs({body,frame}) =
     let
@@ -85,8 +85,9 @@ struct
         (*app (fn s => TextIO.output(outfile,(Assem.format(Temp.makestring) s)))  (List.concat(map genInstrs (procs)));*)
         (*TextIO.output(outfile,"\n\nPrinting Assembly with Regs \n\n");*)
 		withOpenFile ("output.s") (fn out => (printRunTimeFiles out;
-                                             TextIO.output(out,".align 4\n.data\n\n.text\n");
+                                             TextIO.output(out,".align 4\n.data\n");
                                              (app (emitstr out) strs);
+											 TextIO.output(out, "\n.text\n");
                                              app (emitproc out) allocedProcReg))
         (*TextIO.output(outfile,".align 4\n.data\n\n.text\n");*)
         (*(app (emitstr outfile) strs);*)
