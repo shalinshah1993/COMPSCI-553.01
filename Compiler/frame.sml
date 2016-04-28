@@ -40,6 +40,7 @@ sig
 	val toString: Temp.label * string -> string
 	val tempMap: register Temp.Table.table
 	val getTempString: Temp.temp -> string
+	val getTempReg: Temp.temp -> register
 end
 
 structure MIPSFrame :> FRAME 
@@ -118,12 +119,6 @@ struct
 	
 	val tempMap = foldr (fn ((temp, regEntry), table) => Tp.Table.enter(table, temp, regEntry)) Tp.Table.empty fullRegList
 	
-	(*val tempMap = 
-    List.foldl 
-      (fn ((key, value), table) => Tp.Table.enter(table, key, value))
-        Temp.Table.empty
-          (ListPair.zip(registerList, tempList))*)
-	
 	fun moveVarToReg (savedVar, saveReg) = Tr.MOVE (Tr.TEMP saveReg, Tr.TEMP savedVar)
 	
 	fun generateSequenceFromList [] = Tr.EXP (Tr.CONST 0)
@@ -134,6 +129,11 @@ struct
 		case Tp.Table.look(tempMap, temp) of 
 		  	NONE => ("$"^Tp.makestring(temp))
 		    | SOME(Reg(regName)) => regName
+
+	fun getTempReg(temp) =
+		case Tp.Table.look(tempMap, temp) of 
+		  	NONE => Reg "Grr!"
+		    | SOME(regName) => regName
 	
 	(* can store on register or in frame on memory *)
 	datatype access = InFrame of int 
@@ -175,10 +175,8 @@ struct
  	(* For offset k we need frame pointer while for register we don't *)
 	fun exp (InFrame(k)) fp:Tr.exp = Tr.MEM(Tr.BINOP(Tr.PLUS, fp, Tr.CONST(k)))
     | exp (InReg (t)) fp:Tr.exp = Tr.TEMP(t)
-
-    (* Dummy implementation as described by Appel *)
-	 
-    fun procEntryExit1(frame, body) = 
+ 
+    fun procEntryExit1(frame:frame, body) = 
 		let
 			val saveRegisters = [RA] @ calleeSave
 			val tempRegisters = map (fn t => Tp.newtemp()) saveRegisters
