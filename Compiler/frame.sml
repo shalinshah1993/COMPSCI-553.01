@@ -200,7 +200,10 @@ struct
 				
 			val viewShift = generateSequenceFromList (ListPair.map moveArguments (argRegs, functionParams))
 		in
-			body
+			(*body*)
+			(case functionParams of
+				[] => newBody
+				| _ => Tr.SEQ(generateSequenceFromList(ListPair.map moveArguments (argRegs, functionParams)), newBody))
 		end
 	
 	fun procEntryExit2(frame, body) = 
@@ -218,16 +221,19 @@ struct
 
 	(* Does this part still have JOUETTE in it? *)
 	fun procEntryExit3({name=name, formals=params,offset=locals}:frame, body: Assem.instr list) =
-		let
-			val totalOffset = (!locals + (List.length argRegs)) * wordSize
+		let			
+			val totalOffset = (!locals + (((List.length argRegs) + 1)*wordSize))
 		in
 			{prolog=S.name name ^ ":\n" ^
-					"\t\tsw $fp, 0($sp)\n" ^
-					"\t\tmove $fp, $sp\n" ^
-					"\t\taddiu $sp, $sp, " ^ intToStr(totalOffset) ^ "\n",
+					"\t\tsub $sp, $sp, " ^ intToStr(totalOffset) ^ "\n" ^
+					"\t\tsw $ra, 8($sp)\n" ^
+					"\t\tsw $fp, 4($sp)\n" ^
+					"\t\tmove $fp, $sp\n",
 			body=body,
 			epilog="move $sp, $fp\n" ^
-              "\t\tlw $fp, 0($sp)\n" ^
+              "\t\tlw $fp, 4($sp)\n" ^
+			  "\t\tlw $ra, 8($sp)\n" ^
+			  "\t\taddi $sp, $sp, " ^ intToStr(totalOffset) ^ "\n" ^
               "\t\tjr $ra\n\n"}
 		end
 		(*{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
