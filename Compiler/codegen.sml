@@ -125,19 +125,19 @@ struct
 			(* Same ORDER as TREE structure for ass code pattern *)
 			and munchExp(T.MEM(T.BINOP(T.PLUS,e1,T.CONST i))) = 
 				(result(fn r => emit(A.OPER
-					{assem="addi `d0, `s0, "^ intToStr(i) ^"\n",
+					{assem="lw `d0, " ^ intToStr i ^ "(`s0)\n",
 					src=[munchExp e1],
 					dst=[r],
 					jump=NONE})))
 			| munchExp(T.MEM(T.BINOP(T.PLUS, T.CONST i, e1))) =
 				(result(fn r => emit(A.OPER
-					{assem="addi `d0, `s0, "^ intToStr(i) ^"\n",
+					{assem="lw `d0, " ^ intToStr i ^ "(`s0)\n",
 					src=[munchExp e1],
 					dst=[r],
 					jump=NONE})))
 			| munchExp(T.MEM(T.CONST i)) =
 				(result(fn r => emit(A.OPER
-					{assem="lw `d0, (r0  + " ^ intToStr i ^ ")\n",
+					{assem="lw `d0, " ^ intToStr i ^ "(r0)\n",
 					src=[],
 					dst=[r],
 					jump=NONE})))

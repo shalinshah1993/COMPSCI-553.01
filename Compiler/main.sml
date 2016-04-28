@@ -88,7 +88,7 @@ struct
         (app (emitstr outfile) strs);
         app (emitproc outfile) allocedProcReg;
         withOpenFile ("test.s") (fn out => (printRunTimeFiles out;
-                                             TextIO.output(out,".align 4\n.data\n\n.text\n");
+                                             TextIO.output(out,".align 4\n.data\n");
                                              (app (emitstr out) strs);
 											 TextIO.output(out, "\n.text\n");
                                              app (emitproc out) allocedProcReg))
