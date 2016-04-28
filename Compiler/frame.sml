@@ -242,6 +242,6 @@ struct
 
     fun externalCall(funcName, argList) = Tr.CALL(Tr.NAME(Tp.namedlabel(funcName)), argList)
 
-    fun toString(label, s) = S.name(label) ^ ": .ascii \"" ^ (String.toCString(s)) ^ "\"\n"
+    fun toString(label, s) = S.name(label) ^ ": .asciiz \"" ^ (String.toCString(s)) ^ "\"\n"
 
 end
