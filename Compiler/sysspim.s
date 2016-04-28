@@ -23,7 +23,9 @@ malloc:
 
 	.data
 	.align 4
-getchar_buf:	.byte 0,0
+getchar_buf:	
+	.byte 0
+	.byte 0
 
 	.text
 getchar:
@@ -40,7 +42,9 @@ getchar:
 
 	.data
 	.align 4
-putchar_buf:	.byte 0,0
+putchar_buf:	
+	.byte 0
+	.byte 0
 
 	.text
 putchar:
