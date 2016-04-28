@@ -86,28 +86,28 @@ struct
 					*)
 			(* ADD is COMMUTATIVE *)
 			| munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i)), e2))=
-				(emit(A.OPER{assem="sw `s0, (`s1+" ^ intToStr i ^ ")\n",
-					src=[munchExp e1, munchExp e2],
+				(emit(A.OPER{assem="sw `s0, " ^ intToStr i ^ "(`s1)\n",
+					src=[munchExp e2, munchExp e1],
 					dst=[],
 					jump=NONE}))
 			| munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, T.CONST i, e1)), e2))=
-				(emit(A.OPER{assem="sw `s0, (`s1+" ^ intToStr i ^ ")\n",
-					src=[munchExp e1, munchExp e2],
+				(emit(A.OPER{assem="sw `s0, "^ intToStr i ^"(`s1)\n",
+					src=[munchExp e2, munchExp e1],
 					dst=[],
 					jump=NONE}))
 			| munchStm(T.MOVE(T.MEM(T.BINOP(T.MINUS, e1, T.CONST i)),e2))=
-				(emit(A.OPER{assem="sw `s0, (`s1" ^ intToStr(~i) ^ ")\n",
-					src=[munchExp e1, munchExp e2],
+				(emit(A.OPER{assem="sw `s0, " ^ intToStr(~i) ^ "(`s1)\n",
+					src=[munchExp e2, munchExp e1],
 					dst=[],
 					jump=NONE}))
 			| munchStm(T.MOVE(T.MEM(T.CONST i), e1))=
-				(emit(A.OPER{assem="sw `s0,(r0+" ^ intToStr i ^ ")\n",
+				(emit(A.OPER{assem="sw `s0, " ^ intToStr i ^ "(r0)\n",
 					src=[munchExp e1],
 					dst=[],
 					jump=NONE}))
 			| munchStm(T.MOVE(T.MEM(e1), e2))=
 				(emit(A.OPER{assem="sw `s0, (`s1)\n",
-					src=[munchExp e1, munchExp e2],
+					src=[munchExp e2, munchExp e1],
 					dst=[],
 					jump=NONE}))
 			| munchStm(T.MOVE(T.TEMP t, e2))=
