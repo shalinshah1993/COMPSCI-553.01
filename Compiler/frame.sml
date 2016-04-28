@@ -222,12 +222,12 @@ struct
 			val totalOffset = (!locals + (List.length argRegs)) * wordSize
 		in
 			{prolog=S.name name ^ ":\n" ^
-					"\t\tsw $fp\t0($sp)\n" ^
-					"\t\tmove $fp\t$sp\n" ^
-					"\t\taddiu $sp\t$sp\t" ^ intToStr(totalOffset) ^ "\n",
+					"\t\tsw $fp,\t0($sp)\n" ^
+					"\t\tmove $fp,\t$sp\n" ^
+					"\t\taddiu $sp,\t$sp,\t" ^ intToStr(totalOffset) ^ "\n",
 			body=body,
-			epilog="\n\t\tmove $sp $fp\n" ^
-              "\t\tlw $fp\t0($sp)\n" ^
+			epilog="\n\t\tmove $sp, $fp\n" ^
+              "\t\tlw $fp,\t0($sp)\n" ^
               "\t\tjr $ra\n\n"}
 		end
 		(*{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
