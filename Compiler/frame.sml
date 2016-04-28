@@ -226,7 +226,7 @@ struct
 					"\t\tmove $fp, $sp\n" ^
 					"\t\taddiu $sp, $sp, " ^ intToStr(totalOffset) ^ "\n",
 			body=body,
-			epilog="\n\t\tmove $sp, $fp\n" ^
+			epilog="move $sp, $fp\n" ^
               "\t\tlw $fp, 0($sp)\n" ^
               "\t\tjr $ra\n\n"}
 		end

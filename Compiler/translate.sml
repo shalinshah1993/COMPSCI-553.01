@@ -275,11 +275,11 @@ struct
 		
 	fun procEntryExit({level=Level ({frame=f:F.frame, parent=parent}, unique), body=body}) =
 		let
-			val frameLabel = T.LABEL(F.name f)
+			(*val frameLabel = T.LABEL(F.name f)*)
 			val body' = F.procEntryExit1(f, unNx(body))
 			val moveStm = T.MOVE((T.TEMP F.RV), unEx (Nx body'))
-			val addLabel = seq[frameLabel, moveStm]
-			val frag = F.PROC({body=addLabel,frame=f})
+			(*val addLabel = seq[frameLabel, moveStm]*)
+			val frag = F.PROC({body=moveStm,frame=f})
 			val _ = (fraglist := frag::(!fraglist))
 		in
 			()
