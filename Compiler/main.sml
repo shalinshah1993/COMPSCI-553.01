@@ -73,7 +73,7 @@ struct
         val (procs, strs) = foldr sepFrags ([],[]) frags
         val procInstrs = map (fn (p as {body,frame}) => (genInstrs(p), frame)) procs
         val allocedProcs = map R.alloc procInstrs
-        val allocedProcReg = map (fn (instr, colored, frame) => (instr, (fn t => F.getTempString(t)), frame)) allocedProcs
+        val allocedProcReg = map (fn (instr, colored, frame) => (instr, (fn t => C.Frame.getColorMapString(colored, t)), frame)) allocedProcs
     in 
        (* withOpenFile (filename ^ ".s") (fn out => ((app (emitstr out) strs);
                                                   (app (emitproc out) allocedProcReg)))*)

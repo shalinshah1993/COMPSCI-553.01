@@ -41,6 +41,7 @@ sig
 	val tempMap: register Temp.Table.table
 	val getTempString: Temp.temp -> string
 	val getTempReg: Temp.temp -> register
+	val getColorMapString: (register Temp.Table.table * Temp.temp) -> string
 end
 
 structure MIPSFrame :> FRAME 
@@ -129,6 +130,11 @@ struct
 		case Tp.Table.look(tempMap, temp) of 
 		  	NONE => ("$"^Tp.makestring(temp))
 		    | SOME(Reg(regName)) => regName
+			
+	fun getColorMapString(colorMap, temp) =
+		case Tp.Table.look(colorMap, temp) of
+			NONE => ("$"^Tp.makestring(temp))
+			| SOME (Reg(regName)) => regName
 
 	fun getTempReg(temp) =
 		case Tp.Table.look(tempMap, temp) of 
