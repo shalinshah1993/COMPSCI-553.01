@@ -62,7 +62,7 @@ struct
 
     fun compile filename = 
     let 
-        val outfile = TextIO.openOut ("output.s")
+        val outfile = TextIO.openOut ("output.txt")
         val absyn = Parse.parse filename
         (* val frags = (FindEscape.prog absyn; Semant.transProg absyn) *)
         val {frags, ty} = Semant.transProg absyn
@@ -75,21 +75,21 @@ struct
         val allocedProcs = map R.alloc procInstrs
         val allocedProcReg = map (fn (instr, colored, frame) => (instr, (fn t => C.Frame.getColorMapString(colored, t)), frame)) allocedProcs
     in 
-        (*TextIO.output(outfile,"----COMPILER MOUNTAIN PRINT-OUT----\n\nPrinting AST\n\n");                                          *)
-        (*PrintAbsyn.print(outfile, absyn);*)
-        (*TextIO.output(outfile,"\n\nPrinting IR\n\n");*)
-        (*app (fn s => Printtree.printtree(outfile,#body s)) procs;*)
-        (*TextIO.output(outfile,"\n\nPrinting Linearized IR\n\n");*)
-        (*app (fn s => Printtree.printtree(outfile, s)) (List.concat(map (fn s => (Canon.linearize (#body s))) procs));*)
-        (*TextIO.output(outfile,"\n\nPrinting Assembly with Temps \n\n");*)
-        (*app (fn s => TextIO.output(outfile,(Assem.format(Temp.makestring) s)))  (List.concat(map genInstrs (procs)));*)
-        (*TextIO.output(outfile,"\n\nPrinting Assembly with Regs \n\n");*)
-		withOpenFile ("output.s") (fn out => (printRunTimeFiles out;
+        TextIO.output(outfile,"----COMPILER MOUNTAIN PRINT-OUT----\n\nPrinting AST\n\n");                                          
+        PrintAbsyn.print(outfile, absyn);
+        TextIO.output(outfile,"\n\nPrinting IR\n\n");
+        app (fn s => Printtree.printtree(outfile,#body s)) procs;
+        TextIO.output(outfile,"\n\nPrinting Linearized IR\n\n");
+        app (fn s => Printtree.printtree(outfile, s)) (List.concat(map (fn s => (Canon.linearize (#body s))) procs));
+        TextIO.output(outfile,"\n\nPrinting Assembly with Temps \n\n");
+        app (fn s => TextIO.output(outfile,(Assem.format(Temp.makestring) s)))  (List.concat(map genInstrs (procs)));
+        TextIO.output(outfile,"\n\nPrinting Assembly with Regs \n\n");
+        TextIO.output(outfile,".align 4\n.data\n\n.text\n");
+        (app (emitstr outfile) strs);
+        app (emitproc outfile) allocedProcReg;
+        withOpenFile ("test.s") (fn out => (printRunTimeFiles out;
                                              TextIO.output(out,".align 4\n.data\n\n.text\n");
                                              (app (emitstr out) strs);
                                              app (emitproc out) allocedProcReg))
-        (*TextIO.output(outfile,".align 4\n.data\n\n.text\n");*)
-        (*(app (emitstr outfile) strs);*)
-        (*app (emitproc outfile) allocedProcReg*)
     end
 end
