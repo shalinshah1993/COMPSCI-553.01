@@ -50,7 +50,7 @@ struct
 			
 			(* Helper Functions *)
 			fun convertTempToReg(t) = 
-			(print (("\nConverting: ") ^ (Frame.getTempString(t)));
+			(print (("\nConverting: ") ^ ("$"^Tp.makestring(t)) ^ "\n");
 				Frame.getTempReg(t))
 			
 			fun popNodeOffGraph (node) =
@@ -74,10 +74,16 @@ struct
 			
 			fun getAdjCount (node) = length(G.adj node)
 			
+			fun isPrecolored(node) =
+				case Tp.Table.look(initial, gtemp(node)) of
+					SOME _ => true
+					| NONE => false
+			
 			fun maintainWorklists (nodes) =
 				let
-					val simplifyWorklist = (fn (n) => (getAdjCount(tnode n) < K))
-					val spillWorklist = (fn (n) => (getAdjCount(tnode n) >= K))
+					val simplifyWorklist = (fn (n) => ((getAdjCount(tnode n) < K ) andalso (isPrecolored(tnode n) = false)))
+					
+					val spillWorklist = (fn (n) => ((getAdjCount(tnode n) >= K ) andalso (isPrecolored(tnode n) = false)))
 				in
 					((Set.filter simplifyWorklist nodes), (Set.filter spillWorklist nodes))
 				end
