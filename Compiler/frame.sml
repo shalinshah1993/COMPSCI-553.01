@@ -104,18 +104,18 @@ struct
 	val specialArgs = [zero,RV,FP,SP,RA]
 	val argRegs = [a0,a1,a2,a3]
 	val calleeSave = [s0,s1,s2,s3,s4,s5,s6,s7]
-	val callerSave = [t0,t1,t2,t3,t4,t5,t6,t7]
+	val callerSave = [t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
 	
 	val colorList = calleeSave @ callerSave
 	
-	val registerList = [Reg("zero"), Reg("RV"), Reg("FP"), Reg("SP"), Reg("RA"), Reg("a0"), Reg("a1"), Reg("a2"), Reg("a3"), Reg("s0"), Reg("s1"), Reg("s2"), Reg("s3"), Reg("s4"), Reg("s5"), Reg("s6"), Reg("s7"), Reg("t0"), Reg("t1"), Reg("t2"), Reg("t3"), Reg("t4"), Reg("t5"), Reg("t6"), Reg("t7")]
+	val registerList = [Reg("zero"), Reg("RV"), Reg("FP"), Reg("SP"), Reg("RA"), Reg("a0"), Reg("a1"), Reg("a2"), Reg("a3"), Reg("s0"), Reg("s1"), Reg("s2"), Reg("s3"), Reg("s4"), Reg("s5"), Reg("s6"), Reg("s7"), Reg("t0"), Reg("t1"), Reg("t2"), Reg("t3"), Reg("t4"), Reg("t5"), Reg("t6"), Reg("t7"), Reg("t8"), Reg("t9")]
 	
-	val tempList = ["$zero", "$RV", "$FP", "$SP", "$RA", "$a0", "$a1", "$a2", "$a3", "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7", "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7"]
+	(*val tempList = ["$zero", "$RV", "$FP", "$SP", "$RA", "$a0", "$a1", "$a2", "$a3", "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7", "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9"]
 
 	(* As per Appel, return NONE for everything except special regs using tempMap definition *)
-	val specialRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0"))]
+	val specialRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0"))]*)
 	
-	val fullRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0")), (a0, Reg("$a0")), (a1, Reg("$a1")), (a2, Reg("$a2")), (a3, Reg("$a3")), (s0, Reg("$s0")), (s1, Reg("$s1")), (s2, Reg("$s2")), (s3, Reg("$s3")), (s4, Reg("$s4")), (s5, Reg("$s5")), (s6, Reg("$s6")), (s7, Reg("$s7")), (t0, Reg("$t0")), (t1, Reg("$t1")), (t2, Reg("$t2")), (t3, Reg("$t3")), (t4, Reg("$t4")), (t5, Reg("$t5")), (t6, Reg("$t6")), (t7, Reg("$t7"))]
+	val fullRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0")), (a0, Reg("$a0")), (a1, Reg("$a1")), (a2, Reg("$a2")), (a3, Reg("$a3")), (s0, Reg("$s0")), (s1, Reg("$s1")), (s2, Reg("$s2")), (s3, Reg("$s3")), (s4, Reg("$s4")), (s5, Reg("$s5")), (s6, Reg("$s6")), (s7, Reg("$s7")), (t0, Reg("$t0")), (t1, Reg("$t1")), (t2, Reg("$t2")), (t3, Reg("$t3")), (t4, Reg("$t4")), (t5, Reg("$t5")), (t6, Reg("$t6")), (t7, Reg("$t7")), (t8, Reg("$t8")), (t9, Reg("$t9"))]
 	
 	
 	val tempMap = foldr (fn ((temp, regEntry), table) => Tp.Table.enter(table, temp, regEntry)) Tp.Table.empty fullRegList
@@ -200,10 +200,10 @@ struct
 				
 			val viewShift = generateSequenceFromList (ListPair.map moveArguments (argRegs, functionParams))
 		in
-			(*body*)
-			(case functionParams of
+			body
+			(*(case functionParams of
 				[] => newBody
-				| _ => Tr.SEQ(generateSequenceFromList(ListPair.map moveArguments (argRegs, functionParams)), newBody))
+				| _ => Tr.SEQ(generateSequenceFromList(ListPair.map moveArguments (argRegs, functionParams)), newBody))*)
 		end
 	
 	fun procEntryExit2(frame, body) = 
