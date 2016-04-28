@@ -2,7 +2,7 @@ CM.make "sources.cm";
 
 let
     val testFilesFolder = "testfiles/"
-    val testFileList = ["test1.tig",
+    val testFileList = ["test1.tig"(*,
                         "test2.tig",
                         "test3.tig",
                         "test4.tig",
@@ -52,7 +52,7 @@ let
 						"test48.tig",
 						"test49.tig",
                         "queens.tig",
-                        "merge.tig"]
+                        "merge.tig"*)]
     val testFiles = map (fn x=>testFilesFolder^x) testFileList
 in
     map (fn x=>Main.compile x) testFiles
