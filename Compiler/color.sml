@@ -50,7 +50,7 @@ struct
 			
 			(* Helper Functions *)
 			fun convertTempToReg(t) = 
-			(print "Converting\n";
+			(print (("\nConverting: ") ^ (Frame.getTempString(t)));
 				valOf(Tp.Table.look(Frame.tempMap, t)))
 			
 			fun popNodeOffGraph (node) =
@@ -102,6 +102,7 @@ struct
 						in
 							(coloredNodes := Set.add((!coloredNodes, newNode));
 							colorMap := Tp.Table.enter((!colorMap), newNode, convertTempToReg(newColor));
+							print (("\nColoring :") ^ (Int.toString(newNode)) ^ (" with color :") ^ (Int.toString(newColor)) ^ ("\n"));
 							color := Tp.Table.enter((!color), newNode, newColor));
 							removeColor([newNode])
 						end
