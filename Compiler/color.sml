@@ -37,13 +37,13 @@ struct
 			
 			(*Local sets for nodes and colors*)
 			val nodeSet = Set.addList(Set.empty, (map gtemp (nodes)))
-			val colorSet = Set.addList(Set.empty, Frame.colorList)
+			val colorSet = ref (Set.addList(Set.empty, Frame.colorList))
 			(*Reference variable to keep track of remaining colors*)
-			val availableColors = ref colorSet
+			val availableColors = colorSet
 			
 			(*Number of colors we have*)
-			val K = Set.numItems(colorSet)
-	
+			val K = Set.numItems(!colorSet)
+
 			(*Reference to keep track of nodes visited*)
 			val coloredNodes = ref Set.empty
 			val colorMap = ref initial : allocation ref
@@ -102,7 +102,7 @@ struct
 						in
 							(coloredNodes := Set.add((!coloredNodes, newNode));
 							colorMap := Tp.Table.enter((!colorMap), newNode, convertTempToReg(newColor));
-							print (("\nColoring :") ^ (Int.toString(newNode)) ^ (" with color :") ^ (Int.toString(newColor)) ^ ("\n"));
+							print (("\nColoring :") ^ (Int.toString(newNode)) ^ (" with color :") ^ (Frame.getTempString(newNode)) ^ ("\n"));
 							color := Tp.Table.enter((!color), newNode, newColor));
 							removeColor([newNode])
 						end
@@ -115,7 +115,7 @@ struct
 					()
 				else
 					(if Set.isEmpty(simplify) then
-						print "Spilling: No trivial nodes left"
+						print "Spilling: No trivial nodes left\n"
 					else
 						(let
 							val simpHead = hd(Set.listItems(simplify))
