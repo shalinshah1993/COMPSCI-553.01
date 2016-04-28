@@ -84,6 +84,7 @@ struct
         TextIO.output(outfile,"\n\nPrinting Assembly with Temps \n\n");
         app (fn s => TextIO.output(outfile,(Assem.format(Temp.makestring) s)))  (List.concat(map genInstrs (procs)));
         TextIO.output(outfile,"\n\nPrinting Assembly with Regs \n\n");
+		TextIO.output(outfile,".global MAIN\n.data\n\n.text\n");
         (app (emitstr outfile) strs);
         app (emitproc outfile) allocedProcReg;
         printRunTimeFiles outfile
