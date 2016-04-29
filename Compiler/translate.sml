@@ -121,7 +121,7 @@ struct
 		let
 			val label = Te.newlabel()
 		in
-			(fraglist := F.STRING(label, lit)::(!fraglist);
+			(fraglist := (!fraglist)@[F.STRING(label, lit)];
 			Ex (T.NAME label))
 		end
 	

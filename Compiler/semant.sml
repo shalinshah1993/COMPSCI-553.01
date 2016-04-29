@@ -222,7 +222,7 @@ struct
 						let
 							val {exp=transExp, ty=transTy} = transExp(venv, tenv, exp, level, endLabel)
 						in
-							subTransExps(l, transExp::translatedList, transTy)
+							subTransExps(l, translatedList @ [transExp], transTy)
 						end
 				in
 					subTransExps (exps, [], T.UNIT)
