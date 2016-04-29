@@ -428,8 +428,9 @@ struct
 									| NONE => (Er.error pos ("Could not resolve the type of the parameter when processing header"); T.ERROR)
 							val params' = map transparam params
 							val envParams = map (fn {escape,...} => !escape) params
+							val newLabel = Temp.newlabel()
 						in
-							S.enter(newVenv, name, E.FunEntry {formals = params', result = getReturnType(result), level=Tr.newLevel{parent=level, name=name, formals=envParams}, label=name})
+							S.enter(newVenv, name, E.FunEntry {formals = params', result = getReturnType(result), level=Tr.newLevel{parent=level, name=newLabel, formals=envParams}, label=newLabel})
 						end
 					fun processBody(venv, []) = ()
 					| processBody(venv, {name=name, params=params,result=result, body=body, pos=pos}::func) = 
@@ -588,8 +589,8 @@ struct
 			val unitResult = Tr.resetFrags()
 			val venv = Env.base_venv
 			val tenv = Env.base_tenv
-			val startLabel = Tmp.namedlabel("begin")
-			val endLabel = Tmp.namedlabel("end")
+			val startLabel = Tmp.namedlabel("tig_main")
+			val endLabel = Tmp.namedlabel("end_tig_main")
 			val firstLevel = Tr.newLevel({parent=Tr.outermost, name=startLabel,formals=[]})
 			val tree = transExp(venv, tenv, expr, firstLevel, endLabel)
 		in

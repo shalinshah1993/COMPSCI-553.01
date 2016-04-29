@@ -34,6 +34,8 @@ assem.sml
 makegraph.sml
 liveness.sml
 
+regalloc.sml
+color.sml
 
 main.sml
 

@@ -2,6 +2,9 @@ signature GRAPH =
 sig
     type graph
     type node
+	type noderep
+	
+	val emptyNode : noderep
     
     val nodes: graph -> node list
     val succ: node -> node list

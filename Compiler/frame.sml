@@ -9,13 +9,17 @@ sig
 
 	val newFrame : {name: Temp.label,
 					formals: bool list} -> frame
+					
+	val registerList : register list
 	val name : frame -> Temp.label
 	val formals : frame -> access list
 	val allocLocal : frame -> bool -> access
-
+	val colorList : Temp.temp list
 	val exp : access -> Tree.exp -> Tree.exp
 
 	val procEntryExit1 : frame * Tree.stm -> Tree.stm
+	val procEntryExit2: frame * Assem.instr list -> Assem.instr list
+	val procEntryExit3 : frame * Assem.instr list -> {prolog: string, body: Assem.instr list, epilog: string}
 
 	val externalCall: string * Tree.exp list -> Tree.exp
 
@@ -33,8 +37,11 @@ sig
 	val callerSave : Temp.temp list
 	val argRegs : Temp.temp list
 	
+	val toString: Temp.label * string -> string
 	val tempMap: register Temp.Table.table
 	val getTempString: Temp.temp -> string
+	val getTempReg: Temp.temp -> register
+	val getColorMapString: (register Temp.Table.table * Temp.temp) -> string
 end
 
 structure MIPSFrame :> FRAME 
@@ -97,16 +104,42 @@ struct
 	val specialArgs = [zero,RV,FP,SP,RA]
 	val argRegs = [a0,a1,a2,a3]
 	val calleeSave = [s0,s1,s2,s3,s4,s5,s6,s7]
-	val callerSave = [t0,t1,t2,t3,t4,t5,t6,t7]
+	val callerSave = [t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
+	
+	val colorList = calleeSave @ callerSave
+	
+	val registerList = [Reg("zero"), Reg("RV"), Reg("FP"), Reg("SP"), Reg("RA"), Reg("a0"), Reg("a1"), Reg("a2"), Reg("a3"), Reg("s0"), Reg("s1"), Reg("s2"), Reg("s3"), Reg("s4"), Reg("s5"), Reg("s6"), Reg("s7"), Reg("t0"), Reg("t1"), Reg("t2"), Reg("t3"), Reg("t4"), Reg("t5"), Reg("t6"), Reg("t7"), Reg("t8"), Reg("t9")]
+	
+	(*val tempList = ["$zero", "$RV", "$FP", "$SP", "$RA", "$a0", "$a1", "$a2", "$a3", "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7", "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9"]
 
 	(* As per Appel, return NONE for everything except special regs using tempMap definition *)
-	val specialRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0"))]
-	val tempMap = foldr (fn ((temp, regEntry), table) => Tp.Table.enter(table, temp, regEntry)) Tp.Table.empty specialRegList
+	val specialRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0"))]*)
+	
+	val fullRegList = [(FP, Reg("$fp")), (RV, Reg("$v0")), (RA, Reg("$ra")), (SP, Reg("$sp")), (zero, Reg("$0")), (a0, Reg("$a0")), (a1, Reg("$a1")), (a2, Reg("$a2")), (a3, Reg("$a3")), (s0, Reg("$s0")), (s1, Reg("$s1")), (s2, Reg("$s2")), (s3, Reg("$s3")), (s4, Reg("$s4")), (s5, Reg("$s5")), (s6, Reg("$s6")), (s7, Reg("$s7")), (t0, Reg("$t0")), (t1, Reg("$t1")), (t2, Reg("$t2")), (t3, Reg("$t3")), (t4, Reg("$t4")), (t5, Reg("$t5")), (t6, Reg("$t6")), (t7, Reg("$t7")), (t8, Reg("$t8")), (t9, Reg("$t9"))]
+	
+	
+	val tempMap = foldr (fn ((temp, regEntry), table) => Tp.Table.enter(table, temp, regEntry)) Tp.Table.empty fullRegList
+	
+	fun moveVarToReg (savedVar, saveReg) = Tr.MOVE (Tr.TEMP saveReg, Tr.TEMP savedVar)
+	
+	fun generateSequenceFromList [] = Tr.EXP (Tr.CONST 0)
+		| generateSequenceFromList [a] = a
+		| generateSequenceFromList (a::l) = (Tr.SEQ (a, (generateSequenceFromList l)))
 	
 	fun getTempString(temp) =
 		case Tp.Table.look(tempMap, temp) of 
-		  	NONE => Tp.makestring(temp)
+		  	NONE => ("$"^Tp.makestring(temp))
 		    | SOME(Reg(regName)) => regName
+			
+	fun getColorMapString(colorMap, temp) =
+		case Tp.Table.look(colorMap, temp) of
+			NONE => ("$"^Tp.makestring(temp))
+			| SOME (Reg(regName)) => regName
+
+	fun getTempReg(temp) =
+		case Tp.Table.look(tempMap, temp) of 
+		  	NONE => Reg "Grr!"
+		    | SOME(regName) => regName
 	
 	(* can store on register or in frame on memory *)
 	datatype access = InFrame of int 
@@ -148,9 +181,30 @@ struct
  	(* For offset k we need frame pointer while for register we don't *)
 	fun exp (InFrame(k)) fp:Tr.exp = Tr.MEM(Tr.BINOP(Tr.PLUS, fp, Tr.CONST(k)))
     | exp (InReg (t)) fp:Tr.exp = Tr.TEMP(t)
-
-    (* Dummy implementation as described by Appel *)
-    fun procEntryExit1(frame, body) = body
+ 
+    fun procEntryExit1(frame:frame, body) = 
+		let
+			val saveRegisters = [RA] @ calleeSave
+			val tempRegisters = map (fn t => Tp.newtemp()) saveRegisters
+			val RR = generateSequenceFromList (ListPair.mapEq moveVarToReg (tempRegisters, saveRegisters))
+			val RS = generateSequenceFromList (ListPair.mapEq moveVarToReg (saveRegisters, tempRegisters))
+			val newBody = generateSequenceFromList [RS, body, RR]
+			val functionParams = formals frame
+			
+			fun moveArguments (arg, accessLevel) =
+				let
+					val newAccess = exp accessLevel
+				in
+					Tr.MOVE (newAccess (Tr.TEMP FP), Tr.TEMP arg)
+				end
+				
+			val viewShift = generateSequenceFromList (ListPair.map moveArguments (argRegs, functionParams))
+		in
+			body
+			(*(case functionParams of
+				[] => newBody
+				| _ => Tr.SEQ(generateSequenceFromList(ListPair.map moveArguments (argRegs, functionParams)), newBody))*)
+		end
 	
 	fun procEntryExit2(frame, body) = 
 		body @
@@ -158,12 +212,36 @@ struct
 				src=[zero, RA, SP]@calleeSave,
 				dst=[],
 				jump=SOME[]}]
-				
+			
+	fun intToStr i = 
+		if i >= 0 then 
+			Int.toString i
+		else 
+			"-" ^ Int.toString(~i)	
+
 	(* Does this part still have JOUETTE in it? *)
 	fun procEntryExit3({name=name, formals=params,offset=locals}:frame, body: Assem.instr list) =
-		{prolog="PROCEDURE " ^ Symbol.name name ^ "\n",
+		let			
+			val totalOffset = (!locals + (((List.length argRegs) + 1)*wordSize))
+		in
+			{prolog=S.name name ^ ":\n" ^
+					"\t\tsub $sp, $sp, " ^ intToStr(totalOffset) ^ "\n" ^
+					"\t\tsw $ra, 8($sp)\n" ^
+					"\t\tsw $fp, 4($sp)\n" ^
+					"\t\tmove $fp, $sp\n",
+			body=body,
+			epilog="move $sp, $fp\n" ^
+              "\t\tlw $fp, 4($sp)\n" ^
+			  "\t\tlw $ra, 8($sp)\n" ^
+			  "\t\taddi $sp, $sp, " ^ intToStr(totalOffset) ^ "\n" ^
+              "\t\tjr $ra\n\n"}
+		end
+		(*{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
 		body=body,
-		epilog= "ED " ^ Symbol.name name ^ "\n"}
+		epilog= "\n# END " ^ Symbol.name name ^ "\n"}*)
 
     fun externalCall(funcName, argList) = Tr.CALL(Tr.NAME(Tp.namedlabel(funcName)), argList)
+
+    fun toString(label, s) = S.name(label) ^ ": .asciiz \"" ^ (String.toCString(s)) ^ "\"\n"
+
 end
