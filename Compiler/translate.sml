@@ -206,7 +206,7 @@ struct
 					T.CJUMP(T.LT, varExp, hiExp, forLabel, escape),
 					T.LABEL forLabel,
 					T.MOVE(varExp, T.BINOP(T.PLUS, varExp, T.CONST 1)),
-					T.JUMP(T.NAME forLabel, [forLabel]),
+					T.JUMP(T.NAME bodyLabel, [bodyLabel]),
 					T.LABEL escape])
 		end
 	
