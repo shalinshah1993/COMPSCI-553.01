@@ -427,6 +427,7 @@ struct
 									SOME t => t
 									| NONE => (Er.error pos ("Could not resolve the type of the parameter when processing header"); T.ERROR)
 							val params' = map transparam params
+							val _ = if length(params) > 4 then (Er.error pos ("Cannot pass more than 4 parameters! Tiger can only eat 4 params"); T.ERROR) else (T.UNIT)
 							val envParams = map (fn {escape,...} => !escape) params
 							val newLabel = Temp.newlabel()
 						in
