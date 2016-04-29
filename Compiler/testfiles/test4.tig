@@ -2,13 +2,11 @@
 let
 
 /* calculate n! */
-/*function nfactor(n: int): int =
-		if  n = 0 
+function nfactor(n: int): int =
+		(if  n = 0 
 			then 1
-			else n * nfactor(n-1)*/
-	function dummy(n: int): int =
-		n
+			else n*nfactor(n-1))
 in
-	if dummy(4) = 4 then
+	if nfactor(10) = 3628800 then
 		print ("success!")
 end

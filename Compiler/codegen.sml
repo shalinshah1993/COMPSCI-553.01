@@ -248,7 +248,7 @@ struct
 				(emit(A.OPER{
 					assem="jal "^S.name(e)^"\n",
 					src=munchArgs(0, args),
-					dst=[F.RV],
+					dst=F.RV::F.callerSave,
 					jump=NONE}); F.RV)										
 			and munchArgs (i, []) = []
 			| munchArgs(i, a::l) =

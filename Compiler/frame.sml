@@ -106,7 +106,7 @@ struct
 	val calleeSave = [s0,s1,s2,s3,s4,s5,s6,s7]
 	val callerSave = [t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
 	
-	val colorList = calleeSave @ callerSave
+	val colorList =  callerSave @ calleeSave
 	
 	val registerList = [Reg("zero"), Reg("RV"), Reg("FP"), Reg("SP"), Reg("RA"), Reg("a0"), Reg("a1"), Reg("a2"), Reg("a3"), Reg("s0"), Reg("s1"), Reg("s2"), Reg("s3"), Reg("s4"), Reg("s5"), Reg("s6"), Reg("s7"), Reg("t0"), Reg("t1"), Reg("t2"), Reg("t3"), Reg("t4"), Reg("t5"), Reg("t6"), Reg("t7"), Reg("t8"), Reg("t9")]
 	
@@ -224,7 +224,7 @@ struct
 			val totalOffset = (!locals + (((List.length argRegs) + 1)*wordSize))
 		in
 			{prolog=S.name name ^ ":\n" ^
-					"\t\tsub $sp, $sp, " ^ intToStr(60) ^ "\n" ^
+					"\t\tsub $sp, $sp, " ^ intToStr(100) ^ "\n" ^
 					"\t\tsw $fp, 4($sp)\n" ^
 					"\t\tsw $a0, 8($sp)\n" ^
 					"\t\tsw $a1, 12($sp)\n" ^
@@ -239,9 +239,29 @@ struct
 					"\t\tsw $s4, 44($sp)\n" ^
 					"\t\tsw $s5, 48($sp)\n" ^
 					"\t\tsw $s6, 52($sp)\n" ^
-					"\t\tsw $s7, 56($sp)\n" ,
+					"\t\tsw $s7, 56($sp)\n" ^
+					"\t\tsw $t0, 60($sp)\n" ^
+					"\t\tsw $t1, 64($sp)\n" ^
+					"\t\tsw $t2, 68($sp)\n" ^
+					"\t\tsw $t3, 72($sp)\n" ^
+					"\t\tsw $t4, 76($sp)\n" ^
+					"\t\tsw $t5, 80($sp)\n" ^
+					"\t\tsw $t6, 84($sp)\n" ^
+					"\t\tsw $t7, 88($sp)\n" ^
+					"\t\tsw $t8, 92($sp)\n" ^
+					"\t\tsw $t9, 96($sp)\n",
 			body=body,
 			epilog=
+			"\t\tlw $t9, 96($fp)\n" ^
+			"\t\tlw $t8, 92($fp)\n" ^
+			"\t\tlw $t7, 88($fp)\n" ^
+			"\t\tlw $t6, 84($fp)\n" ^
+			"\t\tlw $t5, 80($fp)\n" ^
+			"\t\tlw $t4, 76($fp)\n" ^
+			"\t\tlw $t3, 72($fp)\n" ^
+			"\t\tlw $t2, 68($fp)\n" ^
+			"\t\tlw $t1, 64($fp)\n" ^
+			"\t\tlw $t0, 60($fp)\n" ^
 			"\t\tlw $s7, 56($fp)\n" ^
 			"\t\tlw $s6, 52($fp)\n" ^
 			"\t\tlw $s5, 48($fp)\n" ^
@@ -257,7 +277,7 @@ struct
 			"\t\tsw $a1, 12($sp)\n" ^
 			"\t\tlw $a0, 8($sp)\n" ^
             "\t\tlw $fp, 4($sp)\n" ^
-			"\t\taddi $sp, $sp, " ^ intToStr(60) ^ "\n" ^
+			"\t\taddi $sp, $sp, " ^ intToStr(100) ^ "\n" ^
             "\t\tjr $ra\n\n"}
 		end
 		(*{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
