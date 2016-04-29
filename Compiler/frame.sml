@@ -158,7 +158,7 @@ struct
  			| allocFormals(hasEscaped::others) = 
  				(
  					if hasEscaped then
- 						(currOffset := !currOffset - wordSize; InFrame(!currOffset)::allocFormals(others))
+ 						(currOffset := !currOffset + wordSize; InFrame(!currOffset)::allocFormals(others))
  					else
  						InReg(Tp.newtemp())::allocFormals(others)
  				)
@@ -173,7 +173,7 @@ struct
  	fun allocLocal ({name = name, formals = formals, offset = currOffset}) hasEscaped = 
  		(
  			if hasEscaped then
- 				(currOffset := !currOffset - wordSize; InFrame(!currOffset))
+ 				(currOffset := !currOffset + wordSize; InFrame(!currOffset))
  			else
  				 InReg(Tp.newtemp())
  		)
@@ -200,10 +200,9 @@ struct
 				
 			val viewShift = generateSequenceFromList (ListPair.map moveArguments (argRegs, functionParams))
 		in
-			body
-			(*(case functionParams of
+			(case functionParams of
 				[] => newBody
-				| _ => Tr.SEQ(generateSequenceFromList(ListPair.map moveArguments (argRegs, functionParams)), newBody))*)
+				| _ => Tr.SEQ(generateSequenceFromList(ListPair.map moveArguments (argRegs, functionParams)), newBody))
 		end
 	
 	fun procEntryExit2(frame, body) = 
@@ -225,16 +224,41 @@ struct
 			val totalOffset = (!locals + (((List.length argRegs) + 1)*wordSize))
 		in
 			{prolog=S.name name ^ ":\n" ^
-					"\t\tsub $sp, $sp, " ^ intToStr(totalOffset) ^ "\n" ^
-					"\t\tsw $ra, 8($sp)\n" ^
+					"\t\tsub $sp, $sp, " ^ intToStr(60) ^ "\n" ^
 					"\t\tsw $fp, 4($sp)\n" ^
-					"\t\tmove $fp, $sp\n",
+					"\t\tsw $a0, 8($sp)\n" ^
+					"\t\tsw $a1, 12($sp)\n" ^
+					"\t\tsw $a2, 16($sp)\n" ^
+					"\t\tsw $a3, 20($sp)\n" ^
+					"\t\tsw $ra, 24($sp)\n" ^
+					"\t\tmove $fp, $sp\n" ^
+					"\t\tsw $s0, 28($sp)\n" ^
+					"\t\tsw $s1, 32($sp)\n" ^
+					"\t\tsw $s2, 36($sp)\n" ^
+					"\t\tsw $s3, 40($sp)\n" ^
+					"\t\tsw $s4, 44($sp)\n" ^
+					"\t\tsw $s5, 48($sp)\n" ^
+					"\t\tsw $s6, 52($sp)\n" ^
+					"\t\tsw $s7, 56($sp)\n" ,
 			body=body,
-			epilog="move $sp, $fp\n" ^
-              "\t\tlw $fp, 4($sp)\n" ^
-			  "\t\tlw $ra, 8($sp)\n" ^
-			  "\t\taddi $sp, $sp, " ^ intToStr(totalOffset) ^ "\n" ^
-              "\t\tjr $ra\n\n"}
+			epilog=
+			"\t\tlw $s7, 56($fp)\n" ^
+			"\t\tlw $s6, 52($fp)\n" ^
+			"\t\tlw $s5, 48($fp)\n" ^
+			"\t\tlw $s4, 44($fp)\n" ^
+			"\t\tlw $s3, 40($fp)\n" ^
+			"\t\tlw $s2, 36($fp)\n" ^
+			"\t\tlw $s1, 32($fp)\n" ^
+			"\t\tlw $s0, 28($fp)\n" ^
+			"move $sp, $fp\n" ^
+			"\t\tlw $ra, 24($sp)\n" ^
+			"\t\tsw $a3, 20($sp)\n" ^
+			"\t\tsw $a2, 16($sp)\n" ^
+			"\t\tsw $a1, 12($sp)\n" ^
+			"\t\tlw $a0, 8($sp)\n" ^
+            "\t\tlw $fp, 4($sp)\n" ^
+			"\t\taddi $sp, $sp, " ^ intToStr(60) ^ "\n" ^
+            "\t\tjr $ra\n\n"}
 		end
 		(*{prolog="\n# PROCEDURE " ^ Symbol.name name ^ "\n",
 		body=body,

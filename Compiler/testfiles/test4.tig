@@ -2,11 +2,13 @@
 let
 
 /* calculate n! */
-function nfactor(n: int): int =
+/*function nfactor(n: int): int =
 		if  n = 0 
 			then 1
-			else n * nfactor(n-1)
-
+			else n * nfactor(n-1)*/
+	function dummy(n: int): int =
+		n
 in
-	nfactor(10)
+	if dummy(4) = 4 then
+		print ("success!")
 end

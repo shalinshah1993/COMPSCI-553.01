@@ -102,7 +102,7 @@ struct
 							T.MOVE(T.TEMP r, T.CONST 0),
 							T.LABEL t],
 						T.TEMP r)
-			end
+			end 
 		| unEx (Nx s) = T.ESEQ(s, T.CONST 0)
 		
 	(* Cx stands for "conditional", represented as a function from label-pair to statement (give it a true and false destination)*)
@@ -273,17 +273,35 @@ struct
 			Ex (T.MEM(T.BINOP(T.PLUS, varExp, offsetExp)))
 		end
 		
-	fun procEntryExit({level=Level ({frame=f:F.frame, parent=parent}, unique), body=body}) =
+	(*fun procEntryExit({level=Level ({frame=f:F.frame, parent=parent}, unique), body=body}) =
 		let
 			(*val frameLabel = T.LABEL(F.name f)*)
 			val body' = F.procEntryExit1(f, unNx(body))
-			val moveStm = T.MOVE((T.TEMP F.RV), unEx (Nx body'))
+			val moveStm = T.MOVE((T.TEMP F.RV), unEx (body'))
+			(*val moveStm = T.MOVE((T.TEMP F.RV), body')*)
 			(*val addLabel = seq[frameLabel, moveStm]*)
 			val frag = F.PROC({body=moveStm,frame=f})
 			val _ = (fraglist := frag::(!fraglist))
 		in
 			()
-		end
+		end*)
+		
+	fun procEntryExit({level=Level ({frame=f:F.frame, parent=parent}, unique), body=body}) =
+        let
+            val frameLabel = T.LABEL(F.name f)
+            (*val body' = F.procEntryExit1(f, unNx(body))*)
+           
+            (*val frameSize = 60*)
+            (*val moveSPDown = T.MOVE(T.TEMP F.SP, T.BINOP(T.PLUS, T.TEMP F.SP, T.CONST (frameSize+(~4))))*)
+            (*val moveSPUp = T.MOVE(T.TEMP F.SP, T.BINOP(T.MINUS, T.TEMP F.SP, T.CONST (frameSize+(~4))))*)
+           
+            val moveStm = T.MOVE((T.TEMP F.RV), unEx (body))
+            (*val addStms = seq[moveSPDown, moveStm, moveSPUp]*)
+            val frag = F.PROC({body=moveStm,frame=f})
+            val _ = (fraglist := frag::(!fraglist))
+        in
+            ()
+        end
 
   fun resetFrags() = (fraglist := []; ())
 
